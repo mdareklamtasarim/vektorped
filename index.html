@@ -6,13 +6,13 @@
 <meta name="theme-color" content="#1461b2">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <link rel="manifest" href="manifest.webmanifest">
-<link rel="apple-touch-icon" href="icons/icon-180.png">
-<link rel="icon" href="icons/icon-192.png">
-<script>window.VP_PDFJS_BASE = "lib/pdfjs/";</script>
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" href="icon-192.png">
+<script>window.VP_PDFJS_BASE = "./";</script>
 <title>VektörPad</title>
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="VektörPad">
-<link rel="stylesheet" href="fonts/fonts.css">
+<link rel="stylesheet" href="fonts.css">
 <style>
 /* Layout: a drafting bench. Tool rail on the left, the paper on a cool pasteboard in the middle,
    a CMYK swatch strip, a docked inspector on the right, the page navigator along the bottom. */
@@ -1091,10 +1091,10 @@ html:not([data-skin="classic"]) .props-nav { display: none; }
 <input type="file" id="file-import" hidden accept=".svg,image/svg+xml,image/png,image/jpeg,image/webp,image/gif,.pdf,application/pdf,.ai,.dxf">
 <input type="color" id="color-picker" hidden>
 
-<script src="lib/paper-full.min.js"></script>
-<script src="lib/jspdf.umd.min.js"></script>
-<script src="lib/svg2pdf.umd.min.js"></script>
-<script src="lib/opentype.min.js"></script>
+<script src="paper-full.min.js"></script>
+<script src="jspdf.umd.min.js"></script>
+<script src="svg2pdf.umd.min.js"></script>
+<script src="opentype.min.js"></script>
 <script src="vp-font.js"></script>
 <script src="vp-icons.js"></script>
 <script src="vp-core.js"></script>
@@ -1129,6 +1129,23 @@ html:not([data-skin="classic"]) .props-nav { display: none; }
 <script src="vp-cdr.js"></script>
 <script src="vp-main.js"></script>
 
+<script>
+// tells the user which part of the package did not reach the site
+window.addEventListener('load', function () {
+  var miss = [];
+  if (!window.paper) miss.push('paper-full.min.js');
+  if (!window.jspdf) miss.push('jspdf.umd.min.js');
+  if (!window.opentype) miss.push('opentype.min.js');
+  if (!window.VP) miss.push('vp-*.js');
+  var fontOk = [].some.call(document.styleSheets, function (s) { return /fonts\.css$/.test(s.href || ''); });
+  if (!fontOk) miss.push('fonts.css');
+  if (!miss.length) return;
+  var d = document.createElement('div');
+  d.style.cssText = 'position:fixed;left:16px;right:16px;top:16px;z-index:99999;background:#fff3cd;color:#5c4400;border:1px solid #e0b400;border-radius:8px;padding:12px 14px;font:15px/1.4 -apple-system,sans-serif';
+  d.textContent = 'Paket eksik yüklenmiş. Bulunamayan dosyalar: ' + miss.join(', ') + '. Bu dosyaları GitHub deposuna yükleyip sayfayı yenileyin.';
+  document.body.appendChild(d);
+});
+</script>
 <script>
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', function () {
