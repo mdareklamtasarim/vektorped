@@ -103,6 +103,7 @@
         return '<button class="pop-item" role="menuitem" data-pick="' + id + '"' + dis + '>' + (a.icon ? ic(a.icon, 'sm') : '') + '<span>' + esc(a.label) + '</span>' + right + '</button>';
       })
       .join('');
+  UI.menuHTML = menuHTML;
 
   /* ================= modal ================= */
   UI.modal = (html, bind) => {

@@ -126,7 +126,18 @@
       tapCount: tap.n
     });
     const two = () => Array.from(ptrs.values()).slice(0, 2);
-    cv.addEventListener('contextmenu', (e) => e.preventDefault());
+    // long press with the Pick tool (finger or pencil held still) opens the context menu
+    const hold = { t: 0, id: null, x: 0, y: 0 };
+    const stopHold = () => {
+      clearTimeout(hold.t);
+      hold.t = 0;
+    };
+    cv.addEventListener('contextmenu', (e) => {
+      e.preventDefault();
+      // a right click (mouse, trackpad); a touch long press is handled below and must not open it twice
+      if (!VP.ctx || performance.now() - VP.ctx.lastOpen < 900 || e.pointerType === 'touch' || e.pointerType === 'pen') return;
+      VP.ctx.open(e.clientX, e.clientY, paper.view.viewToProject(vptOf(e)));
+    });
     cv.addEventListener('pointerdown', (e) => {
       if (e.button === 2) return;
       e.preventDefault();
@@ -141,6 +152,7 @@
       const vpt = vptOf(e);
       ptrs.set(e.pointerId, { vpt, type: e.pointerType });
       if (ptrs.size === 2) {
+        stopHold();
         if (active) {
           const t = VP.tool();
           if (t.cancel) t.cancel();
@@ -166,10 +178,27 @@
       active = true;
       activeId = e.pointerId;
       tool.down(mk(e, vpt));
+      stopHold();
+      if (e.pointerType !== 'mouse' && VP.toolId === 'select' && VP.ctx) {
+        const id = e.pointerId;
+        hold.id = id;
+        hold.x = e.clientX;
+        hold.y = e.clientY;
+        hold.t = setTimeout(() => {
+          hold.t = 0;
+          if (!active || activeId !== id || ptrs.size !== 1) return;
+          const t = VP.tool();
+          if (t.cancel) t.cancel();
+          active = false;
+          activeId = null;
+          VP.ctx.open(hold.x, hold.y);
+        }, 550);
+      }
     });
     cv.addEventListener('pointermove', (e) => {
       const vpt = vptOf(e);
       if (ptrs.has(e.pointerId)) ptrs.get(e.pointerId).vpt = vpt;
+      if (hold.t && e.pointerId === hold.id && Math.hypot(e.clientX - hold.x, e.clientY - hold.y) > 10) stopHold();
       if (gesture && gesture.type === 'pinch') {
         if (ptrs.size < 2) return;
         const [a, b] = two();
@@ -197,6 +226,7 @@
       } else if (!active && e.pointerType === 'mouse' && VP.tool().hover) VP.tool().hover(ev);
     });
     const end = (e) => {
+      if (e.pointerId === hold.id) stopHold();
       const had = ptrs.delete(e.pointerId);
       if (gesture) {
         if (ptrs.size === 0) gesture = null;

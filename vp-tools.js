@@ -8,7 +8,7 @@
   const acc = () => new paper.Color(VP.colors.accent);
 
   VP.TOOL_META = {
-    select: { label: 'Seçim', icon: 'select', key: 'V', hint: 'Dokun: seç · Sürükle: taşı · Seçili nesneye tekrar dokun: döndür/eğ tutamaçları · Çift dokun: düğüm veya metin düzenle' },
+    select: { label: 'Seçim', icon: 'select', key: 'V', hint: 'Dokun: seç · Sürükle: taşı · Basılı tut veya sağ tıkla: menü · Seçili nesneye tekrar dokun: döndür/eğ tutamaçları · Çift dokun: düğüm veya metin düzenle' },
     node: { label: 'Şekil (düğüm düzenleme)', icon: 'node', key: 'A', hint: 'Düğüme dokun: seç · Sürükle: taşı · Çizgiye çift dokun: düğüm ekle · Düğüme çift dokun: sil · Çizgiyi sürükle: eğ' },
     freehand: { label: 'Serbest çizim', icon: 'freehand', key: 'F', drawing: true, hint: 'Sürükleyerek çizin · Uçlar birleşirse eğri kapanır · Yumuşatma özellik çubuğunda' },
     brush: { label: 'Artistik fırça', icon: 'brush', key: 'I', drawing: true, hint: 'Apple Pencil baskısıyla kalınlaşan fırça · Mürekkep rengi: anahat rengi' },
