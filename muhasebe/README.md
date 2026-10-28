@@ -49,6 +49,20 @@ docker build -t muhasebe .
 docker run -d --name muhasebe -p 3000:3000 -v muhasebe-veri:/app/data --restart unless-stopped muhasebe
 ```
 
+### Oracle Cloud'a ücretsiz kurulum
+
+`deploy/oracle-kurulum.sh` betiği Oracle'ın ücretsiz Ubuntu sunucusuna her şeyi kurar: Node.js, program,
+sürekli çalışan servis, DuckDNS adresi, Caddy ile otomatik HTTPS, güvenlik duvarı, gecelik yedek ve
+`sudo muhasebe-guncelle` güncelleme komutu. Betiğin en üstündeki bilgileri doldurup sunucu oluştururken
+*cloud-init* alanına yapıştırmanız yeterli. Sunucuda elle çalıştırmak için: `sudo bash oracle-kurulum.sh`.
+
+Yönetim komutları (`src/cli.js`):
+
+```bash
+ADMIN_USER=ali ADMIN_NAME="Ali Veli" ADMIN_PASSWORD=... COMPANY="Firma" node src/cli.js create-admin
+node src/cli.js backup /yedekler/muhasebe.db
+```
+
 ### İnternete açarken
 
 Birden fazla kişi farklı yerlerden kullanacaksa programı bir sunucuya (VPS) kurun ve önüne HTTPS sağlayan bir
