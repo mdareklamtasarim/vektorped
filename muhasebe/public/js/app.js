@@ -1,7 +1,7 @@
 // App shell: sign-in / first-run screens, navigation and hash routing.
 import {
   html, raw, setHtml, get, post, session, toast, toastError, setUnauthorizedHandler, ROLES, formDialog, field,
-  restoreFocus, offline, presetRange, qs, setHtml as fill, fmtDateTime, confirmDialog,
+  restoreFocus, setNavigator, offline, presetRange, qs, setHtml as fill, fmtDateTime, confirmDialog,
 } from './core.js';
 import { dashboardView } from './views/dashboard.js';
 import { productsView, productView } from './views/stock.js';
@@ -50,8 +50,34 @@ const ROUTES = [
 
 const root = document.getElementById('root');
 
+// Memory routing: when the page runs where #/ addresses aren't kept (the demo), the current
+// address lives here instead of in location.hash.
+const memoryRouting = !!window.MUHASEBE_DEMO;
+let memoryHash = '#/';
+const currentHash = () => (memoryRouting ? memoryHash : location.hash);
+function setHash(target) {
+  if (memoryRouting) {
+    memoryHash = target;
+    route();
+  } else if (location.hash === target) {
+    route();
+  } else {
+    location.hash = target;
+  }
+}
+setNavigator(setHash);
+if (memoryRouting) {
+  // In-app links (href="#/...") are followed here instead of by the browser.
+  document.addEventListener('click', (e) => {
+    const a = e.target.closest('a[href^="#/"]');
+    if (!a || e.defaultPrevented || e.metaKey || e.ctrlKey) return;
+    e.preventDefault();
+    setHash(a.getAttribute('href'));
+  });
+}
+
 function parseHash() {
-  const h = location.hash.replace(/^#/, '') || '/';
+  const h = currentHash().replace(/^#/, '') || '/';
   const [path, search = ''] = h.split('?');
   return { path: path || '/', query: Object.fromEntries(new URLSearchParams(search)) };
 }
@@ -59,8 +85,7 @@ function parseHash() {
 export function go(path, query = {}) {
   const s = new URLSearchParams(Object.entries(query).filter(([, v]) => v !== undefined && v !== null && v !== '')).toString();
   const target = `#${path}${s ? `?${s}` : ''}`;
-  if (location.hash === target) route();
-  else location.hash = target;
+  setHash(target);
 }
 
 let renderToken = 0;
@@ -149,7 +174,7 @@ function shell() {
     ))) return;
     await offline.forget('auth/state');
     try { await post('auth/logout'); } catch { /* signed out anyway */ }
-    location.hash = '';
+    if (!memoryRouting) location.hash = '';
     location.reload();
   });
 }
@@ -319,7 +344,7 @@ setInterval(() => {
   }
 }, 20000);
 
-if ('serviceWorker' in navigator && window.isSecureContext) {
+if ('serviceWorker' in navigator && window.isSecureContext && !memoryRouting) {
   navigator.serviceWorker.register('sw.js').catch(() => {});
 }
 

@@ -1,5 +1,6 @@
 // Panel: today's and this month's figures, balances, critical stock and overdue invoices.
-import { html, setHtml, get, fmtTL, fmtQty, fmtDate, INVOICE_TYPES, canWrite, emptyRow, session } from '../core.js';
+import { html, setHtml, get, fmtTL, fmtQty, fmtDate, INVOICE_TYPES, canWrite, emptyRow, session, navigate,
+} from '../core.js';
 import { transactionDialog } from './finance.js';
 
 export async function dashboardView(root, ctx) {
@@ -87,7 +88,7 @@ export async function dashboardView(root, ctx) {
 
   root.addEventListener('click', async (e) => {
     const row = e.target.closest('[data-href]');
-    if (row) location.hash = row.dataset.href;
+    if (row) navigate(row.dataset.href);
     const tx = e.target.closest('[data-tx]');
     if (tx && (await transactionDialog({ kind: tx.dataset.tx }))) ctx.reload();
   });

@@ -3,6 +3,7 @@
 import {
   html, setHtml, get, qs, fmtTL, fmtMoney, fmtQty, fmtDate, emptyRow, downloadCsv, rangeBar, bindRangeBar, balanceText,
   PARTY_KINDS, session,
+  navigate,
 } from '../core.js';
 
 const TABS = {
@@ -174,7 +175,7 @@ export async function reportsView(root, ctx) {
   bindRangeBar(root, q, ctx.setQuery);
   root.addEventListener('click', (e) => {
     const row = e.target.closest('[data-href]');
-    if (row) location.hash = row.dataset.href;
+    if (row) navigate(row.dataset.href);
     const y = e.target.closest('[data-year]');
     if (y) ctx.setQuery({ ...q, yil: y.dataset.year });
     const act = e.target.closest('[data-act]')?.dataset.act;

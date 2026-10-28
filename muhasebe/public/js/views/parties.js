@@ -3,6 +3,7 @@ import {
   html, raw, setHtml, get, post, put, del, qs, fmtTL, fmtMoney, fmtDate, field, moneyAttr, formDialog,
   confirmDialog, toast, toastError, nums, canWrite, isAdmin, emptyRow, balanceText, downloadCsv, options,
   PARTY_KINDS, INVOICE_TYPES, TX_KINDS, bindFilters, rangeBar, bindRangeBar, session, saved, queued, pendingBadge,
+  navigate,
 } from '../core.js';
 import { transactionDialog } from './finance.js';
 
@@ -47,7 +48,7 @@ export async function partiesView(root, ctx) {
   bindFilters(root, ctx, (f) => ({ q: f.get('q'), tur: f.get('tur'), bakiye: f.get('bakiye'), pasif: f.get('pasif') ? '1' : '' }));
   root.addEventListener('click', async (e) => {
     const row = e.target.closest('[data-href]');
-    if (row) location.hash = row.dataset.href;
+    if (row) navigate(row.dataset.href);
     const act = e.target.closest('[data-act]')?.dataset.act;
     if (act === 'new') {
       const r = await partyDialog(null, { kind: q.tur || 'customer' });
@@ -173,7 +174,7 @@ export async function partyView(root, ctx) {
   bindRangeBar(root, q, ctx.setQuery);
   root.addEventListener('click', async (e) => {
     const row = e.target.closest('[data-href]');
-    if (row) location.hash = row.dataset.href;
+    if (row) navigate(row.dataset.href);
     const tx = e.target.closest('[data-tx]')?.dataset.tx;
     const act = e.target.closest('[data-act]')?.dataset.act;
     try {

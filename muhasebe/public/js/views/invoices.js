@@ -3,6 +3,7 @@ import {
   html, raw, setHtml, el, get, post, put, del, qs, fmtTL, fmtMoney, fmtQty, fmtDate, fmtDateTime, field, moneyAttr,
   confirmDialog, toast, toastError, parseNum, canWrite, isAdmin, emptyRow, today, downloadCsv, options,
   INVOICE_TYPES, bindFilters, rangeBar, bindRangeBar, session, esc, saved, queued, pendingBadge,
+  navigate,
 } from '../core.js';
 import { partyDialog } from './parties.js';
 
@@ -63,7 +64,7 @@ export async function invoicesView(root, ctx) {
   bindRangeBar(root, q, ctx.setQuery);
   root.addEventListener('click', (e) => {
     const row = e.target.closest('[data-href]');
-    if (row) location.hash = row.dataset.href;
+    if (row) navigate(row.dataset.href);
     if (e.target.closest('[data-act=csv]')) {
       downloadCsv('faturalar.csv', ['Tarih', 'No', 'Tür', 'Cari', 'Vade', 'Ara toplam', 'İskonto', 'KDV', 'Toplam', 'Durum'],
         list.map((i) => [fmtDate(i.date), i.no, INVOICE_TYPES[i.type].short, i.party_name, fmtDate(i.due_date),
@@ -355,6 +356,7 @@ export async function invoiceView(root, ctx) {
     ${p.phone ? html`<br>Tel: ${p.phone}` : ''}
     ${p.tax_office ? html`<br>${p.tax_office} V.D.` : ''}${p.tax_no ? html`<br>VKN/TCKN: ${p.tax_no}` : ''}`;
   const sellerIsUs = inv.type === 'sale' || inv.type === 'purchase_return';
+  const hasDiscount = inv.lines.some((l) => l.discount_rate);
 
   setHtml(root, html`
     <div class="page">
@@ -384,20 +386,20 @@ export async function invoiceView(root, ctx) {
         </header>
         <div class="inv-party to"><small>${sellerIsUs ? 'Alıcı' : 'Satıcı'}</small><div>${theirSide}</div></div>
 
-        <table class="inv-lines">
-          <thead><tr><th>#</th><th>Açıklama</th><th class="num">Miktar</th><th class="num">Birim fiyat</th><th class="num">İsk.</th><th class="num">KDV</th><th class="num">Tutar</th></tr></thead>
+        <div class="inv-lines-wrap"><table class="inv-lines">
+          <thead><tr><th>#</th><th>Açıklama</th><th class="num">Miktar</th><th class="num">Birim fiyat</th>${hasDiscount ? html`<th class="num">İsk.</th>` : ''}<th class="num">KDV</th><th class="num">Tutar</th></tr></thead>
           <tbody>
             ${inv.lines.map((l) => html`<tr>
               <td>${l.line_no}</td>
               <td>${l.description}</td>
               <td class="num">${fmtQty(l.qty)} ${l.unit || ''}</td>
               <td class="num">${fmtMoney(l.unit_price)}</td>
-              <td class="num">${l.discount_rate ? `%${l.discount_rate}` : ''}</td>
+              ${hasDiscount ? html`<td class="num">${l.discount_rate ? `%${l.discount_rate}` : ''}</td>` : ''}
               <td class="num">%${l.vat_rate}</td>
               <td class="num">${fmtMoney(l.net)}</td>
             </tr>`)}
           </tbody>
-        </table>
+        </table></div>
 
         <div class="inv-foot">
           <div class="inv-note">${inv.note ? html`<strong>Not:</strong> ${inv.note}` : ''}</div>

@@ -288,6 +288,7 @@ a.stat:hover { border-color: var(--accent); text-decoration: none; }
 .inv-meta { margin-left: auto; border-collapse: collapse; }
 .inv-meta th { text-align: left; color: #667; font-weight: 500; padding: 2px 14px 2px 0; }
 .inv-meta td { text-align: right; font-weight: 600; }
+.inv-lines-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; margin: 0 -4px; }
 .inv-lines { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
 .inv-lines th { background: #f1f4f8; color: #445; font-size: 0.8rem; text-align: left; padding: 8px; border-bottom: 2px solid #d6dce5; }
 .inv-lines td { padding: 8px; border-bottom: 1px solid #e3e7ee; }
@@ -379,7 +380,10 @@ a.stat:hover { border-color: var(--accent); text-decoration: none; }
   .grid-2 { grid-template-columns: minmax(0, 1fr); }
   .form-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .form-grid .span-3 { grid-column: 1 / -1; }
-  .invoice-sheet { padding: 22px 18px; }
+  .invoice-sheet { padding: 22px 16px; }
+  .inv-lines th, .inv-lines td { padding: 7px 5px; }
+  .inv-title { text-align: left; }
+  .inv-meta { margin-left: 0; }
 }
 @media (max-width: 560px) {
   .form-grid, .form-grid.two { grid-template-columns: minmax(0, 1fr); }
@@ -419,7 +423,7 @@ a.stat:hover { border-color: var(--accent); text-decoration: none; }
   .page { padding: 0; max-width: none; gap: 10px; }
   .card, .stat, .page > .table-wrap { box-shadow: none; border: 0; padding: 0; }
   .invoice-sheet { border: 0; box-shadow: none; padding: 0; }
-  .table-wrap { overflow: visible; }
+  .table-wrap, .inv-lines-wrap { overflow: visible; }
   .table th { background: #eef1f5 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   .table tr { break-inside: avoid; }
   a { color: inherit; }

@@ -155,6 +155,12 @@ export function localDate(d = new Date()) {
 }
 export const today = () => localDate();
 
+// Moves to an in-app address like "#/stok/3". The app may swap in memory routing
+// (used when the page runs inside a host that doesn't keep #/ addresses).
+let navigator_ = (href) => { location.hash = href; };
+export function setNavigator(fn) { navigator_ = fn; }
+export const navigate = (href) => navigator_(href);
+
 // A signed customer/supplier balance in words.
 export function balanceText(b) {
   const n = Number(b) || 0;

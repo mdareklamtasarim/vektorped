@@ -110,6 +110,17 @@ Bu durumda programı `COOKIE_SECURE=1 TRUST_PROXY=1 npm start` ile başlatın.
   alış yoksa ürün kartındaki alış fiyatı kullanılır.
 - **Fatura iptali** kaydı ve numarasını korur, stok/cari etkisini ve faturayla girilen ödemeyi geri alır.
 
+## Deneme sürümü (sunucusuz)
+
+`demo/` klasörü programın tarayıcıda tek başına çalışan bir deneme sürümünü üretir: sunucu kodu (`src/`)
+olduğu gibi sayfanın içinde, SQLite'ın JavaScript sürümü sql.js üzerinde çalışır ve örnek verilerle başlar.
+Veriler sadece o tarayıcıda tutulur; senkronizasyon ve yedek yoktur.
+
+```bash
+npm i --no-save sql.js@1.10.3
+npm run demo          # demo-dist/ klasörüne yazar
+```
+
 ## Geliştirme
 
 ```bash

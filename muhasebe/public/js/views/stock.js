@@ -2,6 +2,7 @@
 import {
   html, raw, setHtml, get, post, put, del, qs, fmtTL, fmtMoney, fmtQty, fmtDate, field, moneyAttr, formDialog,
   confirmDialog, toast, toastError, nums, canWrite, isAdmin, emptyRow, today, downloadCsv, INVOICE_TYPES, bindFilters, saved, queued, pendingBadge,
+  navigate,
 } from '../core.js';
 
 const MOVE_KINDS = { invoice: 'Fatura', in: 'Giriş', out: 'Çıkış', count: 'Sayım farkı' };
@@ -50,7 +51,7 @@ export async function productsView(root, ctx) {
 
   root.addEventListener('click', async (e) => {
     const row = e.target.closest('[data-href]');
-    if (row) location.hash = row.dataset.href;
+    if (row) navigate(row.dataset.href);
     const act = e.target.closest('[data-act]')?.dataset.act;
     if (act === 'new') {
       const r = await productDialog();
