@@ -2,7 +2,7 @@
 import {
   html, raw, setHtml, get, post, put, del, qs, fmtTL, fmtMoney, fmtDate, field, moneyAttr, formDialog,
   confirmDialog, toast, toastError, nums, canWrite, isAdmin, emptyRow, balanceText, downloadCsv, options,
-  PARTY_KINDS, INVOICE_TYPES, TX_KINDS, bindFilters, rangeBar, bindRangeBar, session,
+  PARTY_KINDS, INVOICE_TYPES, TX_KINDS, bindFilters, rangeBar, bindRangeBar, session, saved, queued, pendingBadge,
 } from '../core.js';
 import { transactionDialog } from './finance.js';
 
@@ -32,9 +32,9 @@ export async function partiesView(root, ctx) {
           <thead><tr><th>Kod</th><th>Unvan</th><th>Tür</th><th>Telefon</th><th class="num">Bakiye</th></tr></thead>
           <tbody>
             ${parties.length ? parties.map((p) => html`
-              <tr class="link ${p.active ? '' : 'inactive'}" data-href="#/cariler/${p.id}">
+              <tr class="${p.pending ? 'pending' : 'link'} ${p.active ? '' : 'inactive'}" ${p.pending ? '' : raw(`data-href="#/cariler/${p.id}"`)}>
                 <td class="mono">${p.code}</td>
-                <td>${p.name}${p.active ? '' : html` <span class="badge">pasif</span>`}</td>
+                <td>${p.name}${p.active ? '' : html` <span class="badge">pasif</span>`}${pendingBadge(p)}</td>
                 <td>${PARTY_KINDS[p.kind]}</td>
                 <td>${p.phone || ''}</td>
                 <td class="num">${balanceText(p.balance)}</td>
@@ -51,7 +51,7 @@ export async function partiesView(root, ctx) {
     const act = e.target.closest('[data-act]')?.dataset.act;
     if (act === 'new') {
       const r = await partyDialog(null, { kind: q.tur || 'customer' });
-      if (r) ctx.go(`/cariler/${r.id}`);
+      if (r) (queued(r) ? ctx.reload() : ctx.go(`/cariler/${r.id}`));
     }
     if (act === 'csv') {
       downloadCsv('cariler.csv', ['Kod', 'Unvan', 'Tür', 'Vergi dairesi', 'Vergi/TC no', 'Telefon', 'E-posta', 'Adres', 'Bakiye (+borçlu / -alacaklı)'],
@@ -61,14 +61,14 @@ export async function partiesView(root, ctx) {
 }
 
 export async function partyDialog(p = null, defaults = {}) {
-  const code = p ? p.code : (await get('parties/next-code')).code;
+  const code = p ? p.code : await get('parties/next-code', { live: true }).then((r) => r.code, () => '');
   const opening = p ? p.opening_balance : 0;
   return formDialog({
     title: p ? 'Cariyi düzenle' : 'Yeni cari',
     wide: true,
     body: html`
       <div class="form-grid">
-        ${field('Cari kodu', html`<input name="code" value="${code}" required maxlength="40">`)}
+        ${field('Cari kodu', html`<input name="code" value="${code}" maxlength="40" placeholder="Otomatik">`, code ? {} : { hint: 'Boş bırakılırsa otomatik verilir.' })}
         ${field('Unvan / Ad soyad', html`<input name="name" value="${p?.name || defaults.name || ''}" required maxlength="200">`, { cls: 'span-2' })}
         ${field('Tür', html`<select name="kind">${options(PARTY_KINDS, p?.kind || defaults.kind || 'customer')}</select>`)}
         ${field('Vergi dairesi', html`<input name="tax_office" value="${p?.tax_office || ''}" maxlength="80">`)}
@@ -88,13 +88,12 @@ export async function partyDialog(p = null, defaults = {}) {
       delete d.opening_amount;
       delete d.opening_side;
       if (p) {
-        await put(`parties/${p.id}`, d);
-        toast('Cari güncellendi.');
+        saved(await put(`parties/${p.id}`, d), 'Cari güncellendi.');
         return { id: p.id };
       }
       const r = await post('parties', d);
-      toast('Cari eklendi.');
-      return r;
+      saved(r, 'Cari eklendi.');
+      return { ...r, name: d.name, kind: d.kind };
     },
   });
 }
@@ -186,8 +185,7 @@ export async function partyView(root, ctx) {
           [['', 'Devir', '', '', '', '', s.carried], ...s.rows.map((r) => [fmtDate(r.date), DOC_LABEL(r), r.doc_no, r.description, r.debit, r.credit, r.balance])]);
       }
       if (act === 'delete' && (await confirmDialog(`"${p.name}" silinsin mi?`, { confirmLabel: 'Sil' }))) {
-        await del(`parties/${p.id}`);
-        toast('Cari silindi.');
+        saved(await del(`parties/${p.id}`), 'Cari silindi.');
         ctx.go('/cariler');
       }
     } catch (err) {

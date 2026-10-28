@@ -164,6 +164,16 @@ const MIGRATIONS = [
     ('purchase_return_prefix', 'AIF');
   INSERT INTO accounts (name, kind) VALUES ('Merkez Kasa', 'cash');
   `,
+  // Offline clients resend queued changes; each change carries an id so a resend
+  // after a lost response returns the stored answer instead of saving twice.
+  `
+  CREATE TABLE client_ops (
+    id TEXT PRIMARY KEY,
+    user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+    response TEXT NOT NULL,
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+  `,
 ];
 
 function migrate(db) {

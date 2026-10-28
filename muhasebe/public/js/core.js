@@ -1,4 +1,7 @@
 // Shared helpers: safe HTML templating, API client, formatting, dialogs and toasts.
+import * as offline from './offline.js';
+
+export { offline };
 
 // ---- HTML templating (everything interpolated is escaped unless it is already Safe) ----
 export class Safe {
@@ -37,28 +40,81 @@ export class ApiError extends Error {
 let onUnauthorized = () => {};
 export function setUnauthorizedHandler(fn) { onUnauthorized = fn; }
 
-export async function api(method, path, body) {
+// One request to the server. Status 0 means the server could not be reached.
+async function send(method, path, body, opId) {
   const opts = { method, credentials: 'same-origin', headers: {} };
   if (method !== 'GET') {
     opts.headers['Content-Type'] = 'application/json';
     opts.body = JSON.stringify(body ?? {});
   }
+  if (opId) opts.headers['X-Op-Id'] = opId;
+  const ctrl = typeof AbortController === 'function' ? new AbortController() : null;
+  const timer = ctrl && setTimeout(() => ctrl.abort(), method === 'GET' ? 10000 : 15000);
+  if (ctrl) opts.signal = ctrl.signal;
   let res;
   try {
     res = await fetch(`api/${path}`, opts);
   } catch {
-    throw new ApiError('Sunucuya ulaşılamadı. İnternet bağlantınızı kontrol edin.', 0);
+    offline.setOnline(false, offline.state.cacheAt);
+    throw new ApiError('Sunucuya ulaşılamadı. Bağlantınızı kontrol edin.', 0);
+  } finally {
+    if (timer) clearTimeout(timer);
   }
   let data = null;
   try { data = await res.json(); } catch { data = null; }
+  // A proxy or captive Wi-Fi page answering instead of our server counts as offline.
+  if (!data && res.status >= 500) {
+    offline.setOnline(false, offline.state.cacheAt);
+    throw new ApiError('Sunucuya ulaşılamadı.', 0);
+  }
+  offline.setOnline(true);
   if (res.status === 401 && !path.startsWith('auth/')) onUnauthorized();
   if (!res.ok) throw new ApiError((data && data.error) || `Hata (${res.status})`, res.status);
   return data;
 }
-export const get = (p) => api('GET', p);
+
+// Paths that must reach the server right away and are never queued.
+const NEVER_QUEUE = /^(auth\/|backup)/;
+
+// GET: live data when the server answers, otherwise the last saved copy.
+// Writes: sent right away when possible; otherwise queued and sent later.
+// opts.live: never fall back to saved data (e.g. the next free invoice number).
+export async function api(method, path, body, opts = {}) {
+  if (method === 'GET') {
+    try {
+      const data = await send('GET', path);
+      offline.saveCache(path, data);
+      return offline.overlay(path, data);
+    } catch (err) {
+      if (err.status !== 0 || opts.live) throw err;
+      const cached = await offline.readCache(path);
+      if (!cached) throw new ApiError('Bağlantı yok ve bu sayfa bu cihazda daha önce açılmamış.', 0);
+      offline.setOnline(false, cached.at);
+      return offline.overlay(path, cached.data);
+    }
+  }
+  if (NEVER_QUEUE.test(path)) return send(method, path, body);
+  const opId = offline.newOpId();
+  // Keep the order of changes: while older ones wait, new ones wait behind them.
+  if (!offline.hasQueued()) {
+    try {
+      return await send(method, path, body, opId);
+    } catch (err) {
+      if (err.status !== 0) throw err;
+    }
+  }
+  const op = await offline.enqueue(method, path, body, opId);
+  offline.flush();
+  return { ok: true, offline: true, id: op.tmpId, ids: op.tmpId ? [op.tmpId] : [], no: 'bekliyor' };
+}
+export const get = (p, o) => api('GET', p, undefined, o);
 export const post = (p, b) => api('POST', p, b);
 export const put = (p, b) => api('PUT', p, b);
 export const del = (p) => api('DELETE', p);
+export const queued = (r) => !!(r && r.offline);
+export const OFFLINE_SAVED = 'Bağlantı yok: değişiklik bu cihazda saklandı, bağlantı gelince gönderilecek.';
+
+offline.configure({ send });
 
 export function qs(params) {
   const u = new URLSearchParams();
@@ -139,6 +195,14 @@ export function toast(message, kind = 'ok') {
   setTimeout(() => t.remove(), 3700);
 }
 export const toastError = (err) => toast(err && err.message ? err.message : String(err), 'err');
+// Success message, or the "saved on this device" note when the change was queued offline.
+export function saved(r, message) {
+  if (queued(r)) toast(OFFLINE_SAVED, 'wait');
+  else toast(message);
+}
+export const pendingBadge = (x) => (x && x.pending
+  ? html` <span class="badge wait" title="${x.pendingError || 'Bağlantı gelince gönderilecek'}">${x.pendingError ? 'gönderilemedi' : 'bekliyor'}</span>`
+  : '');
 
 // ---- dialogs -----------------------------------------------------------------
 // Opens a form in a modal. onSubmit(data, form) may throw to keep the dialog open.

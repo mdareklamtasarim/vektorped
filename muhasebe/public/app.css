@@ -12,6 +12,8 @@
   --danger: #b8322a;
   --danger-soft: rgba(184, 50, 42, 0.1);
   --ok: #2b7a4c;
+  --warn: #9a5b00;
+  --warn-soft: rgba(196, 122, 0, 0.12);
   --shadow: 0 1px 2px rgba(18, 28, 45, 0.06), 0 4px 14px rgba(18, 28, 45, 0.06);
   --shadow-lg: 0 18px 50px rgba(18, 28, 45, 0.25);
   --font: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
@@ -34,6 +36,8 @@
     --danger: #ff6d61;
     --danger-soft: rgba(255, 109, 97, 0.14);
     --ok: #5fd08d;
+    --warn: #f0b45a;
+    --warn-soft: rgba(240, 180, 90, 0.13);
     --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 4px 14px rgba(0, 0, 0, 0.25);
     --shadow-lg: 0 18px 50px rgba(0, 0, 0, 0.6);
     color-scheme: dark;
@@ -42,7 +46,7 @@
 :root[data-theme="dark"] {
   --bg: #12151a; --panel: #1a1e25; --panel-2: #21262e; --line: #2d333d; --fg: #e6e9ee; --muted: #97a0ae;
   --accent: #5ea6ff; --accent-fg: #08111f; --accent-soft: rgba(94, 166, 255, 0.14); --danger: #ff6d61;
-  --danger-soft: rgba(255, 109, 97, 0.14); --ok: #5fd08d; color-scheme: dark;
+  --danger-soft: rgba(255, 109, 97, 0.14); --ok: #5fd08d; --warn: #f0b45a; --warn-soft: rgba(240, 180, 90, 0.13); color-scheme: dark;
 }
 
 *, *::before, *::after { box-sizing: border-box; }
@@ -318,6 +322,36 @@ a.stat:hover { border-color: var(--accent); text-decoration: none; }
 .toast.err { border-left-color: #ff6d61; }
 .toast.hide { opacity: 0; transform: translateY(8px); }
 
+/* ---- connection & pending changes ------------------------------------------------ */
+.sync-pill {
+  display: inline-flex; align-items: center; gap: 7px; align-self: flex-start;
+  border: 1px solid var(--line); background: var(--panel); color: var(--muted);
+  border-radius: 99px; padding: 5px 12px; font: inherit; font-size: 0.82rem; font-weight: 600; cursor: pointer;
+  margin: 0 6px 12px;
+}
+.sync-pill::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: currentColor; flex: none; }
+.sync-pill.on { color: var(--ok); }
+.sync-pill.off { color: var(--muted); }
+.sync-pill.wait, .sync-pill.busy { color: var(--warn); border-color: var(--warn); background: var(--warn-soft); }
+.sync-pill.bad { color: var(--danger); border-color: var(--danger); background: var(--danger-soft); }
+.topbar .sync-pill { margin: 0 0 0 auto; }
+.net-banner {
+  background: var(--warn-soft); color: var(--fg); border-bottom: 1px solid var(--warn);
+  padding: 9px 28px; font-size: 0.9rem;
+}
+.table tr.pending td { background: var(--warn-soft); }
+.badge.wait { background: var(--warn-soft); color: var(--warn); border-color: transparent; }
+.toast.wait { border-left-color: #f0b45a; }
+.op-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.op-list li {
+  display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap;
+  border: 1px solid var(--line); border-radius: var(--r); padding: 10px 12px;
+}
+.op-list li > div:first-child { display: flex; flex-direction: column; min-width: 0; }
+.op-list li.failed { border-color: var(--danger); background: var(--danger-soft); }
+.op-actions { display: flex; gap: 6px; }
+.err-text { color: var(--danger); }
+
 /* ---- auth ------------------------------------------------------------------- */
 .auth { min-height: 100vh; display: grid; place-items: center; padding: 20px; }
 .auth-card {
@@ -341,6 +375,7 @@ a.stat:hover { border-color: var(--accent); text-decoration: none; }
   }
   .topbar .icon-btn { font-size: 20px; color: var(--fg); }
   .page { padding: 16px 16px 40px; }
+  .net-banner { padding: 9px 16px; }
   .grid-2 { grid-template-columns: minmax(0, 1fr); }
   .form-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .form-grid .span-3 { grid-column: 1 / -1; }
@@ -379,7 +414,7 @@ a.stat:hover { border-color: var(--accent); text-decoration: none; }
   @page { margin: 14mm; }
   :root { --bg: #fff; --panel: #fff; --panel-2: #f3f5f8; --fg: #111; --muted: #555; --line: #ccd; color-scheme: light; }
   body { background: #fff; font-size: 12px; }
-  .sidebar, .topbar, .scrim, .no-print, .back, .actions, .tabs, .filters, #toasts, .icon-btn { display: none !important; }
+  .sidebar, .topbar, .scrim, .net-banner, .no-print, .back, .actions, .tabs, .filters, #toasts, .icon-btn { display: none !important; }
   .print-only { display: block; }
   .page { padding: 0; max-width: none; gap: 10px; }
   .card, .stat, .page > .table-wrap { box-shadow: none; border: 0; padding: 0; }

@@ -2,7 +2,7 @@
 import {
   html, raw, setHtml, get, post, put, del, qs, fmtTL, fmtMoney, fmtDate, field, moneyAttr, formDialog,
   confirmDialog, toast, toastError, nums, canWrite, isAdmin, emptyRow, today, downloadCsv, options,
-  TX_KINDS, rangeBar, bindRangeBar, session,
+  TX_KINDS, rangeBar, bindRangeBar, session, saved, pendingBadge,
 } from '../core.js';
 
 const EXPENSE_CATEGORIES = ['Kira', 'Elektrik', 'Su', 'Doğalgaz', 'İnternet / Telefon', 'Personel maaşı', 'SGK primi',
@@ -59,17 +59,14 @@ export async function transactionDialog({ kind, partyId, accountId, tx } = {}) {
         const p = byLabel.get(String(d.party || '').trim());
         if (!p) throw new Error('Listeden bir cari seçin.');
         d.party_id = p.id;
+        d._party_name = p.name;
       }
       delete d.party;
       d.account_id = Number(d.account_id);
       if (d.to_account_id) d.to_account_id = Number(d.to_account_id);
-      if (tx) {
-        await put(`transactions/${tx.id}`, d);
-        toast('İşlem güncellendi.');
-      } else {
-        await post('transactions', { ...d, kind });
-        toast(`${TX_KINDS[kind].label} kaydedildi.`);
-      }
+      d._account_name = (accounts.find((a) => a.id === d.account_id) || {}).name;
+      if (tx) saved(await put(`transactions/${tx.id}`, d), 'İşlem güncellendi.');
+      else saved(await post('transactions', { ...d, kind }), `${TX_KINDS[kind].label} kaydedildi.`);
       return true;
     },
   });
@@ -88,18 +85,16 @@ function accountDialog(a = null) {
       </div>`,
     onSubmit: async (d) => {
       nums(d, ['opening_balance']);
-      if (a) await put(`accounts/${a.id}`, d);
-      else await post('accounts', d);
-      toast(a ? 'Hesap güncellendi.' : 'Hesap eklendi.');
+      saved(a ? await put(`accounts/${a.id}`, d) : await post('accounts', d), a ? 'Hesap güncellendi.' : 'Hesap eklendi.');
       return true;
     },
   });
 }
 
 const txRow = (t, { showAccount = true, showBalance = false, w = false } = {}) => html`
-  <tr>
+  <tr class="${t.pending ? 'pending' : ''}">
     <td>${fmtDate(t.date)}</td>
-    <td>${TX_KINDS[t.kind].label}</td>
+    <td>${TX_KINDS[t.kind].label}${pendingBadge(t)}</td>
     ${showAccount ? html`<td>${t.account_name}</td>` : ''}
     <td>${t.party_id ? html`<a href="#/cariler/${t.party_id}">${t.party_name}</a>` : t.category || ''}
       ${t.invoice_id ? html` · <a href="#/faturalar/${t.invoice_id}">${t.invoice_no}</a>` : ''}
@@ -107,7 +102,7 @@ const txRow = (t, { showAccount = true, showBalance = false, w = false } = {}) =
     <td class="num pos">${t.direction > 0 ? fmtMoney(t.amount) : ''}</td>
     <td class="num neg">${t.direction < 0 ? fmtMoney(t.amount) : ''}</td>
     ${showBalance ? html`<td class="num">${fmtMoney(t.balance)}</td>` : ''}
-    <td class="num nowrap">${w ? html`
+    <td class="num nowrap">${w && !t.pending ? html`
       ${t.transfer_group ? '' : html`<button class="icon-btn sm" data-edit-tx="${t.id}" title="Düzenle" aria-label="Düzenle">✎</button>`}
       <button class="icon-btn sm" data-del-tx="${t.id}" title="Sil" aria-label="Sil">✕</button>` : ''}</td>
   </tr>`;
@@ -124,8 +119,7 @@ async function handleTxClick(e, rows, ctx) {
       const tx = rows.find((t) => String(t.id) === delId);
       const extra = tx.transfer_group ? ' Virmanın iki tarafı da silinir.' : tx.invoice_id ? ' Fatura ödenmemiş görünecek.' : '';
       if (await confirmDialog(`${TX_KINDS[tx.kind].label} (${fmtTL(tx.amount)}) silinsin mi?${extra}`, { confirmLabel: 'Sil' })) {
-        await del(`transactions/${delId}`);
-        toast('İşlem silindi.');
+        saved(await del(`transactions/${delId}`), 'İşlem silindi.');
         ctx.reload();
       }
     }
@@ -160,8 +154,8 @@ export async function financeView(root, ctx) {
         </div>` : ''}
       </div>
       <div class="stats">
-        ${accounts.map((a) => html`<a class="stat link ${a.balance < 0 ? 'neg' : ''} ${a.active ? '' : 'inactive'}" href="#/kasa/${a.id}">
-          <span>${a.kind === 'cash' ? 'Kasa' : 'Banka'}</span><strong>${fmtTL(a.balance)}</strong><small>${a.name}</small></a>`)}
+        ${accounts.map((a) => html`<a class="stat link ${a.balance < 0 ? 'neg' : ''} ${a.active ? '' : 'inactive'}" ${a.pending ? '' : raw(`href="#/kasa/${a.id}"`)}>
+          <span>${a.kind === 'cash' ? 'Kasa' : 'Banka'}${pendingBadge(a)}</span><strong>${fmtTL(a.balance)}</strong><small>${a.name}</small></a>`)}
       </div>
       <section class="card">
         <header><h2>Hareketler</h2>
@@ -248,8 +242,7 @@ export async function accountView(root, ctx) {
       if (act === 'edit' && (await accountDialog(a))) ctx.reload();
       if (act === 'print') window.print();
       if (act === 'delete' && (await confirmDialog(`"${a.name}" hesabı silinsin mi?`, { confirmLabel: 'Sil' }))) {
-        await del(`accounts/${a.id}`);
-        toast('Hesap silindi.');
+        saved(await del(`accounts/${a.id}`), 'Hesap silindi.');
         ctx.go('/kasa');
       }
     } catch (err) {

@@ -1,7 +1,7 @@
 // Stock: product list, product card with movements, manual stock in/out and counts.
 import {
   html, raw, setHtml, get, post, put, del, qs, fmtTL, fmtMoney, fmtQty, fmtDate, field, moneyAttr, formDialog,
-  confirmDialog, toast, toastError, nums, canWrite, isAdmin, emptyRow, today, downloadCsv, INVOICE_TYPES, bindFilters,
+  confirmDialog, toast, toastError, nums, canWrite, isAdmin, emptyRow, today, downloadCsv, INVOICE_TYPES, bindFilters, saved, queued, pendingBadge,
 } from '../core.js';
 
 const MOVE_KINDS = { invoice: 'Fatura', in: 'Giriş', out: 'Çıkış', count: 'Sayım farkı' };
@@ -32,9 +32,9 @@ export async function productsView(root, ctx) {
             <th class="num">Ort. maliyet</th><th class="num">Satış fiyatı</th><th class="num">KDV</th></tr></thead>
           <tbody>
             ${products.length ? products.map((p) => html`
-              <tr class="link ${p.active ? '' : 'inactive'}" data-href="#/stok/${p.id}">
+              <tr class="${p.pending ? 'pending' : 'link'} ${p.active ? '' : 'inactive'}" ${p.pending ? '' : raw(`data-href="#/stok/${p.id}"`)}>
                 <td class="mono">${p.code}</td>
-                <td>${p.name}${p.active ? '' : html` <span class="badge">pasif</span>`}</td>
+                <td>${p.name}${p.active ? '' : html` <span class="badge">pasif</span>`}${pendingBadge(p)}</td>
                 <td>${p.category || ''}</td>
                 <td class="num ${p.stock < 0 || p.critical ? 'neg' : ''}">${fmtQty(p.stock)} ${p.unit}</td>
                 <td class="num">${fmtMoney(p.avg_cost)}</td>
@@ -54,7 +54,7 @@ export async function productsView(root, ctx) {
     const act = e.target.closest('[data-act]')?.dataset.act;
     if (act === 'new') {
       const r = await productDialog();
-      if (r) ctx.go(`/stok/${r.id}`);
+      if (r) (queued(r) ? ctx.reload() : ctx.go(`/stok/${r.id}`));
     }
     if (act === 'csv') {
       downloadCsv('stok-listesi.csv',
@@ -65,13 +65,14 @@ export async function productsView(root, ctx) {
 }
 
 export async function productDialog(p = null) {
-  const code = p ? p.code : (await get('products/next-code')).code;
+  // Offline the next free code is unknown; the server assigns one when it is left empty.
+  const code = p ? p.code : await get('products/next-code', { live: true }).then((r) => r.code, () => '');
   return formDialog({
     title: p ? 'Ürünü düzenle' : 'Yeni ürün',
     wide: true,
     body: html`
       <div class="form-grid">
-        ${field('Stok kodu', html`<input name="code" value="${code}" required maxlength="40">`)}
+        ${field('Stok kodu', html`<input name="code" value="${code}" maxlength="40" placeholder="Otomatik">`, code ? {} : { hint: 'Boş bırakılırsa otomatik verilir.' })}
         ${field('Ürün adı', html`<input name="name" value="${p?.name || ''}" required maxlength="200">`, { cls: 'span-2' })}
         ${field('Birim', html`<input name="unit" value="${p?.unit || 'Adet'}" list="unit-list" required maxlength="20">
           <datalist id="unit-list">${UNITS.map((u) => html`<option value="${u}">`)}</datalist>`)}
@@ -89,12 +90,11 @@ export async function productDialog(p = null) {
     onSubmit: async (d) => {
       nums(d, ['buy_price', 'sell_price', 'vat_rate', 'critical_level']);
       if (p) {
-        await put(`products/${p.id}`, d);
-        toast('Ürün güncellendi.');
+        saved(await put(`products/${p.id}`, d), 'Ürün güncellendi.');
         return { id: p.id };
       }
       const r = await post('products', d);
-      toast('Ürün eklendi.');
+      saved(r, 'Ürün eklendi.');
       return r;
     },
   });
@@ -115,7 +115,8 @@ function stockMoveDialog(p, kind) {
     onSubmit: async (d) => {
       nums(d, ['qty', 'unit_cost']);
       const r = await post('stock-moves', { ...d, kind, product_id: p.id });
-      toast(`Kaydedildi. Yeni stok: ${fmtQty(r.stock)} ${p.unit}`);
+      if (queued(r)) saved(r);
+      else toast(`Kaydedildi. Yeni stok: ${fmtQty(r.stock)} ${p.unit}`);
       return r;
     },
   });
@@ -179,15 +180,13 @@ export async function productView(root, ctx) {
         if (await productDialog(p)) ctx.reload();
       } else if (act === 'delete') {
         if (await confirmDialog(`"${p.name}" silinsin mi? Bu işlem geri alınamaz.`, { confirmLabel: 'Sil' })) {
-          await del(`products/${p.id}`);
-          toast('Ürün silindi.');
+          saved(await del(`products/${p.id}`), 'Ürün silindi.');
           ctx.go('/stok');
         }
       }
       const moveId = e.target.closest('[data-del-move]')?.dataset.delMove;
       if (moveId && (await confirmDialog('Bu stok hareketi silinsin mi?', { confirmLabel: 'Sil' }))) {
-        await del(`stock-moves/${moveId}`);
-        toast('Hareket silindi.');
+        saved(await del(`stock-moves/${moveId}`), 'Hareket silindi.');
         ctx.reload();
       }
     } catch (err) {

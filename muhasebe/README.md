@@ -40,6 +40,23 @@ Tarayıcıda `http://localhost:3000` adresini açın. İlk açılışta firma ad
 | `DB_FILE` | `muhasebe/data/muhasebe.db` | Veritabanı dosyası |
 | `COOKIE_SECURE` | – | HTTPS arkasında `1` yapın (oturum çerezi yalnızca HTTPS ile gönderilir) |
 | `TRUST_PROXY` | – | Nginx/Caddy gibi bir ters vekil arkasında `1` yapın (gerçek IP ve host bilgisi için) |
+| `BACKUP_DIR` | – | Verilirse program her gün bu klasöre yedek alır, son 30 günü saklar |
+
+### Dükkân bilgisayarına kurulum (Windows) ve telefondan çevrimdışı kullanım
+
+1. Bilgisayara [Node.js](https://nodejs.org/) LTS ve [Tailscale](https://tailscale.com/download) kurun, Tailscale'e giriş yapın.
+2. Programı indirip açın, `muhasebe` klasörünü kalıcı bir yere (örn. Belgeler) taşıyın.
+3. `muhasebe\windows\KUR.bat` dosyasına çift tıklayın. Bu dosya:
+   - programı başlatır ve Windows açılınca kendiliğinden başlatılmasını ayarlar,
+   - her gün `yedekler\` klasörüne yedek alınmasını sağlar (son 30 gün),
+   - Tailscale ile `https://bilgisayar-adi.xxxx.ts.net` adresini açar (ilk seferde bir onay bağlantısı çıkabilir).
+4. Telefona Tailscale'i kurup aynı hesapla girin, bu adresi açın ve **Ana ekrana ekle** deyin.
+
+Telefonda bağlantı yokken program son görülen bilgilerle açılır; eklenen fatura, cari, ürün, tahsilat ve
+giderler telefonda saklanır ve bilgisayara ulaşılınca sırayla gönderilir. Üstteki rozet bekleyen değişiklik
+sayısını gösterir; dokununca liste açılır. Aynı değişiklik iki kez gönderilse bile sunucu bir kez kaydeder.
+
+Diğer dosyalar: `GUNCELLE.bat` yeni sürümü indirip kurar (veriye dokunmaz), `DURDUR.bat` programı durdurur.
 
 ### Docker ile
 

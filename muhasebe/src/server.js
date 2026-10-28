@@ -126,8 +126,13 @@ function createApp({ dbFile, secureCookies = false, trustProxy = false, log = co
       if (!String(req.headers['content-type'] || '').startsWith('application/json')) {
         throw new HttpError(415, 'İstek JSON olmalı.');
       }
+      // Browsers say themselves whether a request comes from this same site; that works behind
+      // any proxy (Tailscale, Caddy). Older browsers fall back to comparing Origin with Host.
+      const site = req.headers['sec-fetch-site'];
       const origin = req.headers.origin;
-      if (origin) {
+      if (site) {
+        if (site !== 'same-origin' && site !== 'none') throw new HttpError(403, 'İzin verilmeyen kaynak.');
+      } else if (origin) {
         const host = req.headers['x-forwarded-host'] && trustProxy ? req.headers['x-forwarded-host'] : req.headers.host;
         let ok = false;
         try { ok = new URL(origin).host === host; } catch { ok = false; }
@@ -156,7 +161,24 @@ function createApp({ dbFile, secureCookies = false, trustProxy = false, log = co
         );
       },
     };
-    const result = await route.handler(ctx);
+    const opId = req.method === 'GET' ? null : req.headers['x-op-id'];
+    let result;
+    if (opId) {
+      if (!/^[A-Za-z0-9-]{8,64}$/.test(opId)) throw new HttpError(400, 'Geçersiz işlem kimliği.');
+      const done = db.get('SELECT response FROM client_ops WHERE id = :id', { id: opId });
+      if (done) return sendJson(res, 200, JSON.parse(done.response), { 'X-Op-Replayed': '1' });
+      // The change and the record of it commit together, so a retry can never apply it twice.
+      result = db.tx(() => {
+        const r = route.handler(ctx);
+        if (r && typeof r.then === 'function') throw new Error('Asenkron işleyici tekrar korumasıyla kullanılamaz.');
+        db.run('INSERT INTO client_ops (id, user_id, response) VALUES (:id, :u, :r)', {
+          id: opId, u: user ? user.id : null, r: JSON.stringify(r === undefined ? { ok: true } : r),
+        });
+        return r;
+      });
+    } else {
+      result = await route.handler(ctx);
+    }
 
     if (result && result.$file) {
       const f = result.$file;
@@ -204,21 +226,44 @@ function createApp({ dbFile, secureCookies = false, trustProxy = false, log = co
     serveStatic(req, res, url.pathname);
   });
 
+  db.run("DELETE FROM client_ops WHERE created_at < datetime('now', '-180 days')");
   server.on('close', () => db.close());
   return { server, db };
 }
 
-module.exports = { createApp };
+// Daily copy of the database into dir (BACKUP_DIR); keeps the newest `keep` files.
+function scheduleBackups(db, dir, keep = 30, log = console) {
+  const run = () => {
+    try {
+      fs.mkdirSync(dir, { recursive: true });
+      const day = new Date().toISOString().slice(0, 10);
+      const file = path.join(dir, `muhasebe-${day}.db`);
+      if (!fs.existsSync(file)) {
+        db.exec(`VACUUM INTO '${file.replace(/'/g, "''")}'`);
+        log.log(`Yedek alındı: ${file}`);
+      }
+      const old = fs.readdirSync(dir).filter((f) => /^muhasebe-\d{4}-\d{2}-\d{2}\.db$/.test(f)).sort().slice(0, -keep);
+      for (const f of old) fs.rmSync(path.join(dir, f), { force: true });
+    } catch (err) {
+      log.error('Yedek alınamadı:', err.message);
+    }
+  };
+  run();
+  return setInterval(run, 60 * 60 * 1000).unref();
+}
+
+module.exports = { createApp, scheduleBackups };
 
 if (require.main === module) {
   const port = Number(process.env.PORT) || 3000;
   const host = process.env.HOST || '0.0.0.0';
   const dbFile = process.env.DB_FILE || path.join(__dirname, '..', 'data', 'muhasebe.db');
-  const { server } = createApp({
+  const { server, db } = createApp({
     dbFile,
     secureCookies: process.env.COOKIE_SECURE === '1',
     trustProxy: process.env.TRUST_PROXY === '1',
   });
+  if (process.env.BACKUP_DIR) scheduleBackups(db, path.resolve(process.env.BACKUP_DIR));
   server.listen(port, host, () => {
     console.log(`Muhasebe & Stok çalışıyor: http://localhost:${port}  (veritabanı: ${dbFile})`);
   });

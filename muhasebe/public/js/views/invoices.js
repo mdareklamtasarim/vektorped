@@ -2,7 +2,7 @@
 import {
   html, raw, setHtml, el, get, post, put, del, qs, fmtTL, fmtMoney, fmtQty, fmtDate, fmtDateTime, field, moneyAttr,
   confirmDialog, toast, toastError, parseNum, canWrite, isAdmin, emptyRow, today, downloadCsv, options,
-  INVOICE_TYPES, bindFilters, rangeBar, bindRangeBar, session, esc,
+  INVOICE_TYPES, bindFilters, rangeBar, bindRangeBar, session, esc, saved, queued, pendingBadge,
 } from '../core.js';
 import { partyDialog } from './parties.js';
 
@@ -44,9 +44,9 @@ export async function invoicesView(root, ctx) {
           <thead><tr><th>Tarih</th><th>No</th><th>Tür</th><th>Cari</th><th>Vade</th><th class="num">KDV hariç</th><th class="num">KDV</th><th class="num">Toplam</th></tr></thead>
           <tbody>
             ${list.length ? list.map((i) => html`
-              <tr class="link ${i.status === 'cancelled' ? 'cancelled' : ''}" data-href="#/faturalar/${i.id}">
+              <tr class="${i.pending ? 'pending' : 'link'} ${i.status === 'cancelled' ? 'cancelled' : ''}" ${i.pending ? '' : raw(`data-href="#/faturalar/${i.id}"`)}>
                 <td>${fmtDate(i.date)}</td>
-                <td class="mono">${i.no}${i.status === 'cancelled' ? html` <span class="badge">iptal</span>` : ''}</td>
+                <td class="mono">${i.pending ? '' : i.no}${i.status === 'cancelled' ? html` <span class="badge">iptal</span>` : ''}${pendingBadge(i)}</td>
                 <td>${INVOICE_TYPES[i.type].short}</td>
                 <td>${i.party_name}</td>
                 <td>${fmtDate(i.due_date)}</td>
@@ -111,7 +111,8 @@ export async function invoiceFormView(root, ctx) {
     if (p.barcode) productByLabel.set(p.barcode.toLocaleLowerCase('tr'), p);
   }
   const preParty = inv ? inv.party : partyById.get(Number(ctx.query.cari));
-  const nextNo = inv ? inv.no : (await get(`invoices/next-no${qs({ type, date: today() })}`)).no;
+  // Offline the next number is unknown; an empty number is filled in by the server when sent.
+  const nextNo = inv ? inv.no : await get(`invoices/next-no${qs({ type, date: today() })}`, { live: true }).then((r) => r.no, () => '');
   const sorted = [...parties].sort((a, b) => {
     const want = T.party;
     const rank = (p) => (p.kind === want || p.kind === 'both' ? 0 : 1);
@@ -146,7 +147,7 @@ export async function invoiceFormView(root, ctx) {
               </div>
               <small class="hint" data-party-info></small>
             </label>
-            ${field('Fatura no', html`<input name="no" value="${nextNo}" maxlength="40">`, { hint: usesBuyPrice ? 'Tedarikçinin fatura numarası.' : 'Boş bırakılırsa otomatik verilir.' })}
+            ${field('Fatura no', html`<input name="no" value="${nextNo}" maxlength="40">`, { hint: usesBuyPrice ? 'Tedarikçinin fatura numarası.' : nextNo ? 'Boş bırakılırsa otomatik verilir.' : 'Bağlantı yok: numara gönderilirken otomatik verilecek.' })}
             ${field('Fatura tarihi', html`<input type="date" name="date" value="${inv ? inv.date : today()}" required>`)}
             ${field('Vade tarihi', html`<input type="date" name="due_date" value="${inv?.due_date || ''}">`)}
             ${field('Not', html`<input name="note" value="${inv?.note || ''}" maxlength="1000">`)}
@@ -277,7 +278,9 @@ export async function invoiceFormView(root, ctx) {
     if (e.target.closest('[data-act=new-party]')) {
       const r = await partyDialog(null, { kind: T.party, name: partyInput.value });
       if (r) {
-        const fresh = await get(`parties/${r.id}`);
+        const fresh = queued(r)
+          ? { id: r.id, name: r.name, code: 'yeni', kind: r.kind, balance: 0 }
+          : await get(`parties/${r.id}`);
         partyMap.set(partyLabel(fresh), fresh);
         root.querySelector('#party-list').append(el(html`<option value="${partyLabel(fresh)}"></option>`));
         partyInput.value = partyLabel(fresh);
@@ -314,12 +317,18 @@ export async function invoiceFormView(root, ctx) {
       const f = form.elements;
       const body = {
         type, party_id: party.id, no: f.no.value, date: f.date.value, due_date: f.due_date.value, note: f.note.value, lines,
+        _party_name: party.name,
       };
       if (f.paid && f.paid.checked) body.payment_account_id = Number(f.payment_account_id.value);
       btn.disabled = true;
       const r = inv ? await put(`invoices/${inv.id}`, body) : await post('invoices', body);
-      toast(inv ? 'Fatura güncellendi.' : `Fatura kaydedildi: ${r.no}`);
-      ctx.go(`/faturalar/${r.id}`);
+      if (queued(r)) {
+        saved(r);
+        ctx.go(inv ? `/faturalar/${inv.id}` : '/faturalar', inv ? {} : { tur: type === 'sale' || type === 'purchase' ? type : 'iade' });
+      } else {
+        toast(inv ? 'Fatura güncellendi.' : `Fatura kaydedildi: ${r.no}`);
+        ctx.go(`/faturalar/${r.id}`);
+      }
     } catch (err) {
       errBox.textContent = err.message;
       errBox.hidden = false;
@@ -419,14 +428,12 @@ export async function invoiceView(root, ctx) {
       if (act === 'cancel') {
         const msg = `${inv.no} iptal edilsin mi? Stok ve cari etkisi geri alınır${inv.payments.length ? ', bu faturayla girilen ödeme de silinir' : ''}. Fatura kaydı "iptal" olarak kalır.`;
         if (await confirmDialog(msg, { confirmLabel: 'İptal et' })) {
-          await post(`invoices/${inv.id}/cancel`);
-          toast('Fatura iptal edildi.');
+          saved(await post(`invoices/${inv.id}/cancel`), 'Fatura iptal edildi.');
           ctx.reload();
         }
       }
       if (act === 'delete' && (await confirmDialog(`${inv.no} kalıcı olarak silinsin mi? Bu işlem geri alınamaz.`, { confirmLabel: 'Kalıcı sil' }))) {
-        await del(`invoices/${inv.id}`);
-        toast('Fatura silindi.');
+        saved(await del(`invoices/${inv.id}`), 'Fatura silindi.');
         ctx.go('/faturalar');
       }
     } catch (err) {

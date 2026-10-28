@@ -1,7 +1,7 @@
 // Settings: company details, invoice prefixes, own password, users, backup and audit log.
 import {
   html, raw, setHtml, get, put, post, field, formDialog, toast, toastError, isAdmin, session, ROLES, options,
-  fmtDateTime, emptyRow, formData,
+  fmtDateTime, emptyRow, formData, saved,
 } from '../core.js';
 import { changePasswordDialog } from '../app.js';
 
@@ -101,9 +101,8 @@ export async function settingsView(root, ctx) {
   root.querySelector('[data-form=company]').addEventListener('submit', async (e) => {
     e.preventDefault();
     try {
-      await put('settings', formData(e.target));
+      saved(await put('settings', formData(e.target)), 'Ayarlar kaydedildi.');
       session.company = e.target.elements.company_name.value;
-      toast('Ayarlar kaydedildi.');
     } catch (err) {
       toastError(err);
     }

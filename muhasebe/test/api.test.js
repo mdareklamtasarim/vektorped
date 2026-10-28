@@ -30,6 +30,7 @@ function client() {
     return { status: res.status, data };
   };
   return {
+    cookie: () => cookie,
     get: (p) => call('GET', p),
     post: (p, b = {}) => call('POST', p, b),
     put: (p, b = {}) => call('PUT', p, b),
@@ -71,6 +72,17 @@ test('writes need a JSON body and a matching origin', async () => {
     method: 'POST', headers: { 'Content-Type': 'application/json', Origin: 'https://evil.example' }, body: '{}',
   });
   assert.equal(res2.status, 403);
+  const res3 = await fetch(`${base}/api/auth/login`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json', 'Sec-Fetch-Site': 'cross-site' }, body: '{}',
+  });
+  assert.equal(res3.status, 403);
+  // Behind a proxy the Host may differ from the page's address; the browser's own same-origin flag decides.
+  const res4 = await fetch(`${base}/api/auth/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Sec-Fetch-Site': 'same-origin', Origin: 'https://pc.tail1234.ts.net' },
+    body: JSON.stringify({ username: 'yok', password: 'yanlis-sifre' }),
+  });
+  assert.equal(res4.status, 401);
 });
 
 test('products, parties and accounts can be created', async () => {
@@ -257,4 +269,39 @@ test('static files are served and paths cannot escape public/', async () => {
   assert.equal(res.status, 200);
   const esc = await fetch(`${base}/..%2Fpackage.json`);
   assert.notEqual(esc.status, 200);
+});
+
+test('a change sent twice with the same operation id is saved once', async () => {
+  const send = (opId) => fetch(`${base}/api/parties`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Cookie: admin.cookie(), 'X-Op-Id': opId },
+    body: JSON.stringify({ name: 'Çevrimdışı Müşteri' }),
+  }).then(async (r) => ({ status: r.status, replayed: r.headers.get('x-op-replayed'), data: await r.json() }));
+  const first = await send('op-12345678-aaaa');
+  const second = await send('op-12345678-aaaa');
+  assert.equal(first.status, 200);
+  assert.equal(second.replayed, '1');
+  assert.equal(second.data.id, first.data.id);
+  const list = ok(await admin.get('/api/parties?q=Çevrimdışı'));
+  assert.equal(list.length, 1);
+  assert.equal((await send('bad id!')).status, 400);
+});
+
+test('daily backups are written once per day and old ones pruned', () => {
+  const fs = require('node:fs');
+  const os = require('node:os');
+  const path = require('node:path');
+  const { openDb } = require('../src/db');
+  const { scheduleBackups } = require('../src/server');
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'yedek-'));
+  for (const d of ['2020-01-01', '2020-01-02', '2020-01-03']) fs.writeFileSync(path.join(dir, `muhasebe-${d}.db`), 'x');
+  const db = openDb(':memory:');
+  const timer = scheduleBackups(db, dir, 2, { log() {}, error() {} });
+  clearInterval(timer);
+  const files = fs.readdirSync(dir).sort();
+  assert.equal(files.length, 2);
+  assert.equal(files[0], 'muhasebe-2020-01-03.db');
+  assert.match(files[1], /^muhasebe-\d{4}-\d{2}-\d{2}\.db$/);
+  db.close();
+  fs.rmSync(dir, { recursive: true, force: true });
 });

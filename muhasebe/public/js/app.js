@@ -1,7 +1,7 @@
 // App shell: sign-in / first-run screens, navigation and hash routing.
 import {
   html, raw, setHtml, get, post, session, toast, toastError, setUnauthorizedHandler, ROLES, formDialog, field,
-  restoreFocus,
+  restoreFocus, offline, presetRange, qs, setHtml as fill, fmtDateTime, confirmDialog,
 } from './core.js';
 import { dashboardView } from './views/dashboard.js';
 import { productsView, productView } from './views/stock.js';
@@ -121,6 +121,7 @@ function shell() {
         <nav class="nav">
           ${NAV.map((n) => html`<a href="#${n.path}" data-path="${n.path}">${icon(n.icon)}<span>${n.label}</span></a>`)}
         </nav>
+        <button class="sync-pill" data-sync type="button"></button>
         <div class="user-box">
           <div><strong>${u.name}</strong><small>${ROLES[u.role]}</small></div>
           <button class="btn ghost sm" id="logout">Çıkış</button>
@@ -131,13 +132,22 @@ function shell() {
         <header class="topbar">
           <button class="icon-btn" id="menu" aria-label="Menü">☰</button>
           <strong>${session.company || 'Muhasebe'}</strong>
+          <button class="sync-pill" data-sync type="button"></button>
         </header>
+        <div class="net-banner" id="net-banner" hidden></div>
         <main id="view"></main>
       </div>
     </div>`);
   document.getElementById('menu').addEventListener('click', () => document.body.classList.toggle('nav-open'));
   document.getElementById('scrim').addEventListener('click', () => document.body.classList.remove('nav-open'));
+  document.querySelectorAll('[data-sync]').forEach((b) => b.addEventListener('click', syncDialog));
+  renderNetState();
   document.getElementById('logout').addEventListener('click', async () => {
+    if (offline.state.pending && !(await confirmDialog(
+      `${offline.state.pending} değişiklik henüz gönderilmedi. Bu cihazda saklanmaya devam eder ve tekrar giriş yapınca gönderilir. Çıkış yapılsın mı?`,
+      { confirmLabel: 'Çıkış yap', danger: false },
+    ))) return;
+    await offline.forget('auth/state');
     try { await post('auth/logout'); } catch { /* signed out anyway */ }
     location.hash = '';
     location.reload();
@@ -183,7 +193,10 @@ function authScreen({ setup }) {
   form.querySelector('input').focus();
 }
 
+let offlineReady = null;
 async function start() {
+  if (!offlineReady) offlineReady = offline.init();
+  await offlineReady;
   let state;
   try {
     state = await get('auth/state');
@@ -200,6 +213,114 @@ async function start() {
   if (!state.user) return authScreen({ setup: false });
   shell();
   route();
+  offline.flush().then(() => prefetch());
+}
+
+// ---- offline: status pill, banner, sync panel, background refresh -----------------
+function renderNetState() {
+  const st = offline.state;
+  let text;
+  let cls;
+  if (st.syncing) { text = 'Gönderiliyor…'; cls = 'busy'; }
+  else if (st.failed) { text = `${st.failed} değişiklik gönderilemedi`; cls = 'bad'; }
+  else if (st.pending) { text = `${st.pending} değişiklik bekliyor`; cls = 'wait'; }
+  else if (!st.online) { text = 'Çevrimdışı'; cls = 'off'; }
+  else { text = 'Çevrimiçi'; cls = 'on'; }
+  document.querySelectorAll('[data-sync]').forEach((b) => {
+    b.className = `sync-pill ${cls}`;
+    b.textContent = text;
+    b.title = 'Bağlantı ve bekleyen değişiklikler';
+  });
+  const banner = document.getElementById('net-banner');
+  if (banner) {
+    banner.hidden = st.online;
+    banner.textContent = st.online ? '' : `Bağlantı yok. ${st.cacheAt ? `Bu cihazda ${fmtDateTime(new Date(st.cacheAt).toISOString().slice(0, 19).replace('T', ' '))} tarihinde kaydedilen bilgiler gösteriliyor. ` : ''}Yaptığın değişiklikler saklanır ve bağlantı gelince gönderilir.`;
+  }
+}
+offline.onChange(renderNetState);
+
+async function syncDialog() {
+  const listMarkup = () => {
+    const ops = offline.outbox();
+    if (!ops.length) return html`<p class="muted">Bekleyen değişiklik yok. ${offline.state.online ? 'Tüm kayıtlar sunucuda.' : 'Bağlantı gelince yeni değişiklikler buradan gönderilir.'}</p>`;
+    return html`<ul class="op-list">${ops.map((o) => html`
+      <li class="${o.status === 'failed' ? 'failed' : ''}">
+        <div><strong>${offline.describe(o)}</strong>
+          <small class="muted">${new Date(o.createdAt).toLocaleString('tr-TR', { dateStyle: 'short', timeStyle: 'short' })}</small>
+          ${o.error ? html`<small class="err-text">${o.error}</small>` : ''}</div>
+        <div class="op-actions">
+          ${o.status === 'failed' ? html`<button type="button" class="btn sm" data-retry="${o.seq}">Tekrar dene</button>` : ''}
+          <button type="button" class="btn ghost sm danger-text" data-discard="${o.seq}">Sil</button>
+        </div>
+      </li>`)}</ul>`;
+  };
+  await formDialog({
+    title: 'Bekleyen değişiklikler',
+    submitLabel: 'Şimdi gönder',
+    body: html`<div data-ops>${listMarkup()}</div>
+      <p class="muted small">Bağlantı yokken yapılan değişiklikler bu cihazda sırayla saklanır ve sunucuya ulaşılınca otomatik gönderilir.</p>`,
+    onOpen: (form) => {
+      const box = form.querySelector('[data-ops]');
+      const redraw = () => fill(box, listMarkup());
+      const off = offline.onChange(redraw);
+      form.closest('dialog').addEventListener('close', off);
+      box.addEventListener('click', async (e) => {
+        const r = e.target.closest('[data-retry]');
+        const d = e.target.closest('[data-discard]');
+        if (r) { await offline.retry(Number(r.dataset.retry)); offline.flush(); }
+        if (d && (await confirmDialog('Bu değişiklik gönderilmeden silinsin mi? Geri alınamaz.', { confirmLabel: 'Sil' }))) {
+          await offline.discard(Number(d.dataset.discard));
+        }
+      });
+    },
+    onSubmit: async () => {
+      await offline.flush();
+      if (offline.state.pending && !offline.state.online) throw new Error('Sunucuya hâlâ ulaşılamıyor. Bağlantı gelince otomatik gönderilecek.');
+      if (offline.state.failed) throw new Error('Bazı değişiklikler gönderilemedi; ayrıntılar listede.');
+      toast('Tüm değişiklikler gönderildi.');
+    },
+  });
+}
+
+// Save the pages most used on the go, so they open without a connection later.
+let prefetching = false;
+async function prefetch() {
+  if (prefetching || !offline.state.online || !session.user) return;
+  prefetching = true;
+  const month = presetRange('month');
+  const paths = [
+    'auth/state', 'settings', 'reports/dashboard', 'products', 'parties', 'parties?kind=customer', 'parties?kind=supplier',
+    'accounts', 'transactions/categories', `invoices${qs({ type: 'sale', ...month })}`, `transactions${qs(month)}`,
+  ];
+  try {
+    for (const p of paths) {
+      try { await get(p); } catch { break; }
+    }
+  } finally {
+    prefetching = false;
+  }
+}
+
+offline.configure({
+  onSynced: (n) => {
+    toast(`${n} değişiklik sunucuya gönderildi.`);
+    route();
+    prefetch();
+  },
+});
+window.addEventListener('online', () => offline.flush());
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible' && session.user) offline.flush().then(() => prefetch());
+});
+setInterval(() => {
+  if (session.user && (offline.hasQueued() || !offline.state.online)) {
+    // A cheap request tells us when the server is back; then send what waits.
+    get('auth/state', { live: true }).then(() => offline.flush()).catch(() => {});
+  }
+}, 20000);
+
+if ('serviceWorker' in navigator && window.isSecureContext) {
+  navigator.serviceWorker.register('sw.js').catch(() => {});
 }
 
 setUnauthorizedHandler(() => {
