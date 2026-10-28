@@ -340,7 +340,7 @@
     const prefs = VP.io.loadPrefs();
     VP.ui.init();
     if (prefs && prefs.dock) VP.ui.dockTab = prefs.dock;
-    if (innerWidth <= 1100) $('#dock').hidden = true;
+    if (innerWidth <= 640) $('#dock').hidden = true;
 
     const wrap = $('#canvas-wrap');
     const resize = () => {
