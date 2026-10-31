@@ -1,6 +1,6 @@
 /* VektörPad offline worker: keeps every file of the app on the iPad so it opens without internet.
    A new version of the package (a different VERSION) is downloaded in the background when online. */
-const VERSION = '085a6e526edc';
+const VERSION = '25065f9ba4a5';
 const CACHE = 'vektorpad-' + VERSION;
 const FILES = [
  "./",
@@ -53,38 +53,50 @@ const FILES = [
  "svg2pdf.umd.min.js",
  "vp-bitmap.js",
  "vp-bmpfx.js",
+ "vp-bmpfx2.js",
  "vp-cdr.js",
  "vp-classic.js",
  "vp-cmds.js",
+ "vp-color.js",
  "vp-core.js",
  "vp-ctx.js",
  "vp-curves.js",
  "vp-doc.js",
  "vp-docs.js",
  "vp-draw2.js",
+ "vp-draw3.js",
  "vp-ecut.js",
  "vp-effects.js",
  "vp-effects2.js",
+ "vp-file2.js",
  "vp-files.js",
  "vp-fill.js",
  "vp-fillfx.js",
  "vp-font.js",
+ "vp-fonts.js",
  "vp-icons.js",
  "vp-io.js",
  "vp-main.js",
  "vp-measure.js",
+ "vp-more.js",
  "vp-objops.js",
  "vp-outline.js",
+ "vp-panels.js",
  "vp-paramedit.js",
+ "vp-qr.js",
  "vp-scripts.js",
  "vp-shape.js",
  "vp-shapes.js",
  "vp-styles.js",
+ "vp-tech.js",
  "vp-text.js",
  "vp-text2.js",
+ "vp-text3.js",
  "vp-textdock.js",
  "vp-tools.js",
- "vp-ui.js"
+ "vp-ui.js",
+ "vp-view.js",
+ "vp-work.js"
 ];
 
 self.addEventListener('install', (e) => {

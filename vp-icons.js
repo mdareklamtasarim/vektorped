@@ -181,6 +181,27 @@
   P.ecNest = '<rect x="3.5" y="3.5" width="17" height="17"/><path d="M3.5 11h9v9.5M12.5 3.5V11M12.5 15h8"/>';
   P.ecWeed = '<rect x="3.5" y="3.5" width="17" height="17" stroke-dasharray="2.5 2"/><circle cx="9" cy="9" r="2.5"/><rect x="13" y="13" width="5" height="5"/><path d="M12 3.5v17M3.5 12h17" stroke-width=".9"/>';  P.kind_pshadow = P.pshadow; P.kind_innerShadow = P.innerShadow; P.kind_blockShadow = P.blockShadow; P.kind_distort = P.distort; P.kind_transpfx = P.transpTool || P.lens;
 
+  P.alignGuides = '<rect x="4" y="5" width="7" height="6"/><rect x="13" y="11" width="7" height="8"/><path d="M13 2.5v19M2.5 11h19" stroke-dasharray="2 1.6"/>';
+  P.symmetry = '<path d="M12 2.5v19" stroke-dasharray="2.2 1.8"/><path d="M10 6C5 6 3.5 10 5.5 13.5S10 18 10 18z" fill="currentColor" fill-opacity=".35"/><path d="M14 6c5 0 6.5 4 4.5 7.5S14 18 14 18z"/>';
+  P.bevel = '<rect x="3.5" y="3.5" width="17" height="17"/><rect x="8" y="8" width="8" height="8"/><path d="M3.5 3.5L8 8M20.5 3.5L16 8M3.5 20.5L8 16M20.5 20.5L16 16"/><path d="M3.5 3.5h17L16 8H8zM3.5 3.5v17L8 16V8z" fill="currentColor" fill-opacity=".3" stroke="none"/>';
+  P.qr = '<path d="M3.5 3.5h6v6h-6zM14.5 3.5h6v6h-6zM3.5 14.5h6v6h-6z"/><path d="M5.8 5.8h1.4v1.4H5.8zM16.8 5.8h1.4v1.4h-1.4zM5.8 16.8h1.4v1.4H5.8z" fill="currentColor"/><path d="M14 14h2.5v2.5H14zM18 14h2.5v2.5H18zM16 17.5h2.5V20H16zM14 19h1.5v1.5H14zM19 18.5h1.5V20.5H19z" fill="currentColor" stroke="none"/>';
+  P.barcode = '<path d="M4 5v14M6.5 5v11M8.5 5v11M11.5 5v11M13 5v11M16 5v11M18.5 5v11M20 5v14" /><path d="M7 19.5h12" stroke-width="1.2"/>';
+  P.kind_bevel = P.bevel; P.kind_symmetry = P.symmetry; P.kind_code = P.qr;
+
+  P.perspDraw = '<path d="M2.5 9.5h19" stroke-dasharray="2 1.6"/><circle cx="12" cy="9.5" r="1.3" fill="currentColor"/><path d="M4 20.5L12 9.5l8 11M8 20.5l4-11 4 11M3 20.5h18M6.3 15.5h11.4"/>';
+  P.impact = '<circle cx="12" cy="12" r="2.2"/><path d="M12 2.5v5M12 16.5v5M2.5 12h5M16.5 12h5M5.3 5.3l3.4 3.4M15.3 15.3l3.4 3.4M18.7 5.3l-3.4 3.4M8.7 15.3l-3.4 3.4"/>';
+  P.fitPath = '<path d="M3 18c4-9 13-11 18-6" stroke-dasharray="2 1.8"/><rect x="4.5" y="11" width="3.5" height="3.5" transform="rotate(-50 6.2 12.7)"/><rect x="10.3" y="6.8" width="3.5" height="3.5" transform="rotate(-15 12 8.5)"/><rect x="16" y="7.8" width="3.5" height="3.5" transform="rotate(20 17.7 9.5)"/>';
+  P.kind_impact = P.impact;
+
+  P.palette = '<path d="M12 3.5a8.5 8.5 0 100 17c1.3 0 1.8-.9 1.4-1.9-.5-1.1.2-2.1 1.4-2.1h1.7A4 4 0 0020.5 12 8.5 8.5 0 0012 3.5z"/><circle cx="7.8" cy="11" r="1.3" fill="currentColor"/><circle cx="10.5" cy="7.3" r="1.3" fill="currentColor"/><circle cx="15" cy="7.8" r="1.3" fill="currentColor"/>';
+  P.swap = '<path d="M5 8h13l-3.5-3.5M19 16H6l3.5 3.5"/>';
+  P.pointillize = '<circle cx="6" cy="6" r="2" fill="currentColor"/><circle cx="12" cy="6" r="1.4" fill="currentColor"/><circle cx="18" cy="6" r="2.2" fill="currentColor"/><circle cx="9" cy="12" r="2.4" fill="currentColor"/><circle cx="15" cy="12" r="1.6" fill="currentColor"/><circle cx="6" cy="18" r="1.5" fill="currentColor"/><circle cx="12" cy="18" r="2.3" fill="currentColor"/><circle cx="18" cy="18" r="1.3" fill="currentColor"/>';
+  P.mosaic = '<rect x="3.5" y="3.5" width="7" height="7"/><rect x="13.5" y="3.5" width="7" height="7" fill="currentColor" fill-opacity=".45"/><rect x="3.5" y="13.5" width="7" height="7" fill="currentColor" fill-opacity=".45"/><rect x="13.5" y="13.5" width="7" height="7"/>';
+
+  P.freeXform = '<rect x="5" y="5" width="11" height="11" stroke-dasharray="2 1.8"/><path d="M9 19l9-3 1-9" /><path d="M16.5 4.5a6 6 0 013 3"/><path d="M19.8 4.2v3.5h-3.5"/><circle cx="9" cy="19" r="1.6" fill="currentColor"/>';
+
+  P.anchorEdit = '<rect x="4" y="7" width="12" height="10"/><path d="M16 12h5" /><path d="M10 4.5l2.5 2.5L10 9.5 7.5 7z" fill="currentColor"/><circle cx="16" cy="12" r="1.6" fill="currentColor"/>';
+
   window.VPIcon = function (name, cls) {
     const body = P[name] || P.plus;
     return '<svg class="i' + (cls ? ' ' + cls : '') + '" viewBox="0 0 24 24" aria-hidden="true">' + body + '</svg>';

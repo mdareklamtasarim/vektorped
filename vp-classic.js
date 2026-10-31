@@ -292,7 +292,19 @@
       const items = (A.whatsNew && document.createElement('div')) || null;
       void items;
       return '<h2>Yenilikler</h2><p class="sec-note">Ayrıntılı liste: Yardım › Yenilikler</p><dl>' +
-        [['Sürüm 14', 'CorelDRAW dosyalarını açma (.cdr), sürüm seçerek CorelDRAW için kaydetme'],
+        [['Sürüm 26', 'Yazı tipi yöneticisi: dosyadan yazı tipi yükleme, Google Fonts’tan ekleme'],
+          ['Sürüm 25', 'Kısayol ve araç çubuğu özelleştirme, renk ayarları, Renk paneli, Varlıklar paneli'],
+          ['Sürüm 24', '31 yeni biteşlem efekti (3B, sanatsal darbeler, mercek parlaması, vitray, hava…), JPEG temizleme, RGB/Lab/CMYK modları'],
+          ['Sürüm 23', 'OpenType yazı ayarları ve değişken yazı tipleri, metni düzleştir, basılmayan karakterler, bindirme baskı, nesne verileri, bağlantılar ve yer imleri, bağlantı noktası aracı'],
+          ['Sürüm 22', 'Son kaydedilene dön, şablonlar, son kullanılanlar, birleştirerek yazdır, kılavuzlar paneli ve açılı kılavuzlar, taban çizgisi ızgarası, sayfa numarası biçimleri, serbest dönüştürme'],
+          ['Sürüm 21', 'Tahribatsız efektler, bağlı metin çerçeveleri, anahattı nesneye dönüştür, geri alma ve şekillendirme panelleri, efekt kopyala/klonla, özel yapıştır'],
+          ['Sürüm 20', 'Dışa aktarma paneli (çoklu dışa aktarma, ZIP), renk provası ve gamut uyarısı'],
+          ['Sürüm 19', 'Görüntü ayarlama laboratuvarı, renk uyumları, Noktalayıcı, Fotoğraf kolajı'],
+          ['Sürüm 18', 'Perspektif çizim (1-2-3 nokta), Etki aracı, nesneleri yola sığdırma, paragraf metnini nesne etrafında akıtma'],
+          ['Sürüm 17', 'Görünüm modları (tel kafes, taslak, piksel), çoklu sayfa görünümü, Koordinatlar paneli, çizim ölçeği'],
+          ['Sürüm 16', 'Hizalama kılavuzları, simetri, eğim efekti, QR kod ve barkod'],
+          ['Sürüm 15', 'Sağ tık menüsü (basılı tutarak)'],
+          ['Sürüm 14', 'CorelDRAW dosyalarını açma (.cdr), sürüm seçerek CorelDRAW için kaydetme'],
           ['Sürüm 13', 'Kesim ve Montaj eklentisi: bıçak izi, hizalama işaretleri, çoğaltma, yerleştirme, ayıklama'],
           ['Sürüm 12', 'Yeni Belge Oluştur penceresi, her belge kendi sekmesinde, klasik masaüstü görünümü, Metin paneli'],
           ['Sürüm 11','Dışa aktarma (EPS, DXF, JPG, WEBP), PDF güvenliği, yazdırma, kitapçık, PDF/AI/DXF içe aktarma, betikler ve makrolar'],
@@ -308,7 +320,7 @@
   };
   const render = () => {
     if (!wl) return;
-    wl.innerHTML = '<nav><div class="wl-brand">' + ($('.brand svg') ? $('.brand').innerHTML : '') + 'VektörPad</div>' +
+    wl.innerHTML = '<nav><div class="wl-brand">' + ($('.brand svg') ? $('.brand').innerHTML : '') + 'VektörPad <small style="font:600 12px var(--font-ui);color:var(--muted)">sürüm 26</small></div>' +
       [['start', 'Başlarken'], ['new', 'Yenilikler'], ['learn', 'Öğrenme'], ['ws', 'Çalışma alanı']].map(([k, l]) => '<button data-wtab="' + k + '" class="' + (wlState.tab === k ? 'on' : '') + '">' + l + '</button>').join('') +
       '<label><input type="checkbox" data-wl="startup"' + (VP.settings.welcome !== false ? ' checked' : '') + '>Başlangıçta göster</label></nav><div class="wl-main">' + content() + '</div>';
   };

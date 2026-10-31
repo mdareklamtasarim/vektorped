@@ -22,7 +22,9 @@
     'sub:Hizala ve dağıt|alignL,alignCH,alignR,alignT,alignCV,alignB,distH,distV',
     'sub:PowerClip|fxPowerclip,fxPowerclip2,pcCenter,pcFit,pcFill',
     'sub:Dönüştür|flipH,flipV,rot90,clearTransform',
-    'sub:Efektler|shadowToggle,fxSeparate,fxClear',
+    'sub:Efektler|shadowToggle,fxBevel,fxSeparate,fxClear',
+    'symNew', 'symEdit', 'symFinish', 'fitObjPath', 'exportAddSel', 'outlineToObj', 'nfxAddA', 'fxCopyFrom', 'txLink', 'txUnlink', 'txOpenType', 'sub:Bindirme baskı|opFill,opStroke',
+    'sub:Paragraf metnini sar|wrapContour,wrapBox,wrapNone,wrapOffset',
     'sub:Eğri|closePath,joinCurves,reversePath,parallelCurve,corners',
     '|',
     'toSymbol', 'breakSymbol', 'toBitmap', 'ecCut', '|',
@@ -32,11 +34,12 @@
   // menu for an empty spot on the page
   const PAGE = [
     'undo', 'redo', '|',
-    'paste', 'selectAll', '|',
+    'paste', 'pasteSpecial', 'selectAll', '|',
     'fit', 'zoom100', '|',
     'grid', 'guides', 'snap', '|',
     'addPage', 'pageSetup', 'pageBg', '|',
     'unlockAll', 'showAll', '|',
+    'insertQR', 'insertBarcode', 'symNew', 'symFinish', '|',
     'dockProps', 'dockObjects'
   ];
 

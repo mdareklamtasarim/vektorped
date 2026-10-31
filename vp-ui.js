@@ -361,7 +361,7 @@
     const dn = $('#doc-name');
     if (document.activeElement !== dn) dn.value = VP.doc.name;
     $('#btn-dock').classList.toggle('on', !$('#dock').hidden);
-    $('#win-title').textContent = VP.doc.name + ' · VektörPad';
+    $('#win-title').textContent = VP.doc.name + ' · VektörPad 26';
     document.querySelectorAll('#stdbar [data-cmd]').forEach((b) => {
       const a = A[b.dataset.cmd];
       if (a && a.checked) {
@@ -385,7 +385,7 @@
   // Same grouping and order as the desktop suite's tool box: pick | shape | crop, zoom | curves, drawing,
   // rectangle, ellipse, shapes | text | dimensions, connectors | effects, transparency | eyedropper, fill |
   // smart fill | outline (a flyout of outline widths, not a tool).
-  const GROUPS = [['select', 'lassoTool'], ['node', 'smoothTool', 'smearTool', 'twirlTool', 'attractTool', 'repelTool', 'roughenTool'], '|', ['cropTool', 'knifeTool', 'eraserTool', 'virtualDel'], ['zoom', 'hand', 'pageTool'], '|', ['freehand', 'line', 'pen', 'bsplineTool', 'polylineTool', 'curve3Tool'], ['brush', 'liveSketch', 'smartDraw', 'sketchTool', 'varOutline'], ['rect', 'rect3Tool'], ['ellipse', 'ellipse3Tool'], ['polygon', 'star', 'cstarTool', 'spiral', 'graphTool', 'perfectTool'], '|', ['text', 'tableTool', 'textPathTool'], '|', ['dimParallel', 'dimHV', 'dimAngular', 'dimSegment', 'dimCallout', 'commentTool'], ['connStraight', 'connRight', 'connRound'], '|', ['shadowTool', 'innerShadowTool', 'blockShadowTool', 'blendTool', 'contourTool', 'distortTool', 'envelopeTool', 'extrudeTool', 'perspectiveTool', 'lensTool', 'powerclipTool'], ['transpTool'], '|', ['eyedropper', 'attrEyedropper'], ['fillTool', 'meshTool'], '|', ['smartFill'], '|', 'outline'];
+  const GROUPS = [['select', 'lassoTool', 'freeXform'], ['node', 'smoothTool', 'smearTool', 'twirlTool', 'attractTool', 'repelTool', 'roughenTool'], '|', ['cropTool', 'knifeTool', 'eraserTool', 'virtualDel'], ['zoom', 'hand', 'pageTool'], '|', ['freehand', 'line', 'pen', 'bsplineTool', 'polylineTool', 'curve3Tool'], ['brush', 'liveSketch', 'smartDraw', 'sketchTool', 'varOutline', 'impactTool'], ['rect', 'rect3Tool'], ['ellipse', 'ellipse3Tool'], ['polygon', 'star', 'cstarTool', 'spiral', 'graphTool', 'perfectTool'], '|', ['text', 'tableTool', 'textPathTool'], '|', ['dimParallel', 'dimHV', 'dimAngular', 'dimSegment', 'dimCallout', 'commentTool'], ['connStraight', 'connRight', 'connRound', 'anchorTool'], '|', ['shadowTool', 'innerShadowTool', 'blockShadowTool', 'blendTool', 'contourTool', 'distortTool', 'envelopeTool', 'extrudeTool', 'perspectiveTool', 'lensTool', 'powerclipTool'], ['transpTool'], '|', ['eyedropper', 'attrEyedropper'], ['fillTool', 'meshTool'], '|', ['smartFill'], '|', 'outline'];
   UI.groupCur = {};
   UI.renderToolbox = () => {
     $('#toolbox').innerHTML = GROUPS.map((g, gi) => {
@@ -2069,7 +2069,7 @@
     });
     // standard toolbar and document tab buttons run actions by id
     document.querySelectorAll('[data-cmd]').forEach((b) => b.addEventListener('click', () => UI.run(b.dataset.cmd)));
-    $('#btn-snap').addEventListener('click', (e) => UI.popover(e.currentTarget, menuHTML(['snap', 'snapGuides', 'snapObjects']), (id) => UI.run(id)));
+    $('#btn-snap').addEventListener('click', (e) => UI.popover(e.currentTarget, menuHTML(['snap', 'snapGuides', 'snapObjects', 'alignGuides']), (id) => UI.run(id)));
     $('#st-chips').addEventListener('click', (e) => {
       if (e.target.closest('[data-st]')) UI.openDock('props');
     });

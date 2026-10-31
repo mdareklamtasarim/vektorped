@@ -13,6 +13,8 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="VektörPad">
 <link rel="stylesheet" href="fonts.css">
+<!-- variable fonts (online only; the app works without them) -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&family=Roboto+Flex:opsz,wght@8..144,100..1000&display=swap">
 <style>
 /* Layout: a drafting bench. Tool rail on the left, the paper on a cool pasteboard in the middle,
    a CMYK swatch strip, a docked inspector on the right, the page navigator along the bottom. */
@@ -1122,6 +1124,18 @@ html:not([data-skin="classic"]) .props-nav { display: none; }
 <script src="vp-docs.js"></script>
 <script src="vp-ecut.js"></script>
 <script src="vp-cdr.js"></script>
+<script src="vp-qr.js"></script>
+<script src="vp-tech.js"></script>
+<script src="vp-view.js"></script>
+<script src="vp-draw3.js"></script>
+<script src="vp-color.js"></script>
+<script src="vp-work.js"></script>
+<script src="vp-more.js"></script>
+<script src="vp-file2.js"></script>
+<script src="vp-text3.js"></script>
+<script src="vp-bmpfx2.js"></script>
+<script src="vp-panels.js"></script>
+<script src="vp-fonts.js"></script>
 <script src="vp-ctx.js"></script>
 <script src="vp-main.js"></script>
 
@@ -1145,11 +1159,21 @@ window.addEventListener('load', function () {
 <script>
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', function () {
-    navigator.serviceWorker.register('sw.js').then(function (reg) {
+    // when a new version takes over, reload once so its files are used (drawings are kept by the autosave)
+    var had = !!navigator.serviceWorker.controller;
+    var reloaded = false;
+    navigator.serviceWorker.addEventListener('controllerchange', function () {
+      if (!had || reloaded) return;
+      reloaded = true;
+      try { if (window.VP && VP.io && VP.io.autosave) VP.io.autosave(); } catch (e) {}
+      setTimeout(function () { location.reload(); }, 400);
+    });
+    navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).then(function (reg) {
+      try { reg.update(); } catch (e) {}
       reg.addEventListener('updatefound', function () {
         var w = reg.installing;
         if (w) w.addEventListener('statechange', function () {
-          if (w.state === 'installed' && navigator.serviceWorker.controller && window.VP && VP.toast) VP.toast('Yeni sürüm indirildi · Uygulamayı kapatıp açınca kullanılır');
+          if (w.state === 'installed' && navigator.serviceWorker.controller && window.VP && VP.toast) VP.toast('Yeni sürüm indirildi · Uygulama yenileniyor…');
         });
       });
     }).catch(function () {});

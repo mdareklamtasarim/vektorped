@@ -279,7 +279,7 @@
         // invisible hit areas of text frames and tables are not part of the artwork
         tmp.getItems({ match: (it) => it.data && it.data.hitOnly }).forEach((it) => it.remove());
         // page number fields show the number of the page being exported
-        tmp.getItems({ match: (it) => it.data && it.data.pageField }).forEach((it) => (it.content = String(index + 1)));
+        tmp.getItems({ match: (it) => it.data && it.data.pageField }).forEach((it) => (it.content = VP.pageLabel ? VP.pageLabel(index) : String(index + 1)));
         // other modules can turn screen-only looks (arrowheads, PDF shadows) into real artwork here
         (VP.io.exportHooks || []).forEach((f) => f(tmp, index, opts));
         if (opts.curves) tmp.getItems({ class: paper.PointText }).forEach((t) => VP.textToPath(t));

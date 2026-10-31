@@ -280,7 +280,7 @@
     const ang = readable(dl.length > 1e-6 ? dl.angle : 0);
     const up = Pt(Math.cos((ang * Math.PI) / 180), Math.sin((ang * Math.PI) / 180)).rotate(-90);
     const mid = a1.add(b1).divide(2);
-    add(textAt(fx, label(fx, VP.toMM(val), ' mm'), mid.add(up.multiply((fx.size || 8) * 0.35 + 1)), ang, col));
+    add(textAt(fx, (VP.dimLen ? ((d) => label(fx, d.v, d.u))(VP.dimLen(VP.toMM(val))) : label(fx, VP.toMM(val), ' mm')), mid.add(up.multiply((fx.size || 8) * 0.35 + 1)), ang, col));
   };
 
   /* =============== CONNECTORS =============== */
