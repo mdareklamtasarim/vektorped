@@ -10,7 +10,7 @@
 
   // menu for a selection, top to bottom
   const OBJECT = [
-    'toCurves', 'breakApart', 'combine', 'group', 'ungroup', 'ungroupAll', '|',
+    'toCurves', 'zoomSel', 'breakApart', 'combine', 'group', 'ungroup', 'ungroupAll', '|',
     'ctxEditArt', 'txEditText', 'textProps', 'txToPara', 'txToArtistic', 'txFitPath', 'txUnpath', 'txFitText', 'txFitFrame', '|',
     'sub:Tablo|tRowAbove,tRowBelow,tColLeft,tColRight,tDelRow,tDelCol,tMerge,tSplit,tDistRows,tDistCols,tableToText,tDelTable',
     'cut', 'copy', 'paste', 'delete', 'duplicate', '|',
@@ -19,6 +19,8 @@
     'fxPowerclip', 'sub:PowerClip|fxPowerclip2,pcCenter,pcFit,pcFill', '|',
     'symNew', 'symEdit', 'symFinish', '|',
     'toSymbol', 'breakSymbol', '|',
+    'sub:İnternet bağlantıları|k6Link', '|',
+    'sub:Nesne stilleri|k6StyleFrom,k6Styles', 'sub:Renk stilleri|k6ColorStyle,k6Styles', '|',
     'sub:Şekillendir|weld,trim,intersect,exclude,frontMinusBack,backMinusFront,divide,simplify,createBoundary',
     'sub:Hizala ve dağıt|alignL,alignCH,alignR,alignT,alignCV,alignB,distH,distV',
     'sub:Dönüştür|flipH,flipV,rot90,clearTransform',
@@ -26,7 +28,7 @@
     'sub:Eğri|closePath,joinCurves,reversePath,parallelCurve,corners',
     'stepRepeat', 'copyProps', 'fitObjPath', 'outlineToObj', 'nfxAddA', 'fxCopyFrom', 'txLink', 'txUnlink', 'txOpenType', 'toBitmap', 'ecCut', 'exportAddSel', '|',
     'sub:Paragraf metnini sar|wrapContour,wrapBox,wrapNone,wrapOffset', '|',
-    'opFill', 'opStroke', '|',
+    'opFill', 'opStroke', 'k6PixGrid', '|',
     'dockProps', 'dockObjects'
   ];
   // menu for an empty spot on the page
