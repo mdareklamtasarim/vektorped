@@ -10,25 +10,23 @@
 
   // menu for a selection, top to bottom
   const OBJECT = [
-    'undo', '|',
-    'cut', 'copy', 'paste', 'delete', '|',
-    'duplicate', 'stepRepeat', 'copyProps', '|',
+    'toCurves', 'breakApart', 'combine', 'group', 'ungroup', 'ungroupAll', '|',
     'ctxEditArt', 'txEditText', 'textProps', 'txToPara', 'txToArtistic', 'txFitPath', 'txUnpath', 'txFitText', 'txFitFrame', '|',
     'sub:Tablo|tRowAbove,tRowBelow,tColLeft,tColRight,tDelRow,tDelCol,tMerge,tSplit,tDistRows,tDistCols,tableToText,tDelTable',
-    'group', 'ungroup', 'ungroupAll', '|',
-    'combine', 'breakApart', 'toCurves', '|',
+    'cut', 'copy', 'paste', 'delete', 'duplicate', '|',
+    'sub:Sırala|toFront,forward,backward,toBack,inFrontOf,behindOf,reverseOrder,toLayer,copyToLayer', '|',
+    'hide', 'lock', '|',
+    'fxPowerclip', 'sub:PowerClip|fxPowerclip2,pcCenter,pcFit,pcFill', '|',
+    'symNew', 'symEdit', 'symFinish', '|',
+    'toSymbol', 'breakSymbol', '|',
     'sub:Şekillendir|weld,trim,intersect,exclude,frontMinusBack,backMinusFront,divide,simplify,createBoundary',
-    'sub:Sırala|toFront,forward,backward,toBack,inFrontOf,behindOf,reverseOrder,toLayer,copyToLayer',
     'sub:Hizala ve dağıt|alignL,alignCH,alignR,alignT,alignCV,alignB,distH,distV',
-    'sub:PowerClip|fxPowerclip,fxPowerclip2,pcCenter,pcFit,pcFill',
     'sub:Dönüştür|flipH,flipV,rot90,clearTransform',
     'sub:Efektler|shadowToggle,fxBevel,fxSeparate,fxClear',
-    'symNew', 'symEdit', 'symFinish', 'fitObjPath', 'exportAddSel', 'outlineToObj', 'nfxAddA', 'fxCopyFrom', 'txLink', 'txUnlink', 'txOpenType', 'sub:Bindirme baskı|opFill,opStroke',
-    'sub:Paragraf metnini sar|wrapContour,wrapBox,wrapNone,wrapOffset',
     'sub:Eğri|closePath,joinCurves,reversePath,parallelCurve,corners',
-    '|',
-    'toSymbol', 'breakSymbol', 'toBitmap', 'ecCut', '|',
-    'lock', 'hide', '|',
+    'stepRepeat', 'copyProps', 'fitObjPath', 'outlineToObj', 'nfxAddA', 'fxCopyFrom', 'txLink', 'txUnlink', 'txOpenType', 'toBitmap', 'ecCut', 'exportAddSel', '|',
+    'sub:Paragraf metnini sar|wrapContour,wrapBox,wrapNone,wrapOffset', '|',
+    'opFill', 'opStroke', '|',
     'dockProps', 'dockObjects'
   ];
   // menu for an empty spot on the page
@@ -44,7 +42,7 @@
   ];
 
   // shown even when they cannot be used right now (greyed out), as in the desktop menu
-  const ALWAYS = ['undo', 'redo', 'cut', 'copy', 'paste', 'delete'];
+  const ALWAYS = ['undo', 'redo', 'cut', 'copy', 'paste', 'delete', 'toCurves', 'breakApart'];
   // text commands appear only when text is selected
   const TEXT_ONLY = ['ctxEditArt', 'txEditText', 'textProps', 'txToPara', 'txToArtistic', 'txFitPath', 'txUnpath', 'txFitText', 'txFitFrame'];
   const isText = (it) => it instanceof paper.PointText || !!(VP.tx && VP.tx.isTx && VP.tx.isTx(it));

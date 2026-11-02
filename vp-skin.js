@@ -146,7 +146,9 @@ html[data-cd][data-skin="classic"][data-skin] #dock { width: 250px; font-size: 1
 html[data-cd][data-skin="classic"][data-skin] .dock-head { height: 24px; }
 html[data-cd][data-skin="classic"][data-skin] .dock-body { padding: 6px 8px; }
 html[data-cd][data-skin="classic"][data-skin] .sec-note { font-size: 11px; }
-html[data-cd][data-skin="classic"][data-skin] .pop-item { min-height: 24px; font-size: 12px; }
+html[data-cd][data-skin="classic"][data-skin] .pop-item { min-height: 21px; font-size: 12px; padding: 0 12px 0 8px; }
+html[data-cd][data-skin="classic"][data-skin] .pop-sep { margin: 2px 4px; }
+html[data-cd][data-skin="classic"][data-skin] .pop-item svg.i.sm { width: 14px; height: 14px; }
 html[data-cd][data-skin="classic"][data-skin] .layer-row, html[data-cd][data-skin="classic"][data-skin] .obj-row { min-height: 24px; }
 html[data-cd][data-skin="classic"][data-skin] .row-btn { width: 22px; height: 22px; }
 @media (pointer: coarse) {
