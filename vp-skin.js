@@ -70,13 +70,13 @@ html[data-cd][data-skin="classic"][data-skin] .st-chip { color: #b8b8b8; }
 /* dockers: plain bold title, plain section headings with a caret, thin rules between sections */
 html[data-cd][data-skin="classic"][data-skin] #dock { background: #262626; border-left: 1px solid var(--cd-sep); }
 html[data-cd][data-skin="classic"][data-skin] .dock-head { background: #262626; border-bottom: 0; }
-html[data-cd][data-skin="classic"][data-skin] .dock-title { font-weight: 700; color: #c4c6c5; font-size: 12.5px; }
+html[data-cd][data-skin="classic"][data-skin] .dock-title { font-weight: 700; color: #c4c6c5; font-size: 11.5px; }
 html[data-cd][data-skin="classic"][data-skin] .dock-title::after { content: ""; }
 html[data-cd][data-skin="classic"][data-skin] .dock-body { gap: 8px; }
 html[data-cd][data-skin="classic"][data-skin] .sec { border-top: 1px solid #333; padding-top: 6px; }
 html[data-cd][data-skin="classic"][data-skin] .sec:first-child { border-top: 0; padding-top: 0; }
 html[data-cd][data-skin="classic"][data-skin] .sec-h { background: transparent; border: 0; margin: 0; padding: 2px 0; min-height: 0; }
-html[data-cd][data-skin="classic"][data-skin] .sec-h h3 { color: #c2c2ca; font-weight: 700; font-size: 12px; }
+html[data-cd][data-skin="classic"][data-skin] .sec-h h3 { color: #c2c2ca; font-weight: 700; font-size: 11px; }
 html[data-cd][data-skin="classic"][data-skin] .sec-h h3::before { content: "⌃ "; color: #9a9a9a; font-size: 11px; }
 html[data-cd][data-skin="classic"][data-skin] .sec-note { color: #8f8f8f; }
 html[data-cd][data-skin="classic"][data-skin] .list, html[data-cd][data-skin="classic"][data-skin] .layer-row, html[data-cd][data-skin="classic"][data-skin] .obj-row { border-color: #333; background: #262626; }
@@ -85,7 +85,7 @@ html[data-cd][data-skin="classic"][data-skin] .obj-row.sel { background: var(--c
 html[data-cd][data-skin="classic"][data-skin] .props-nav { background: #262626; border-bottom-color: #333; }
 /* docker tabs: icon above a small vertical label, grey idle / blue active, on the far right */
 html[data-cd][data-skin="classic"][data-skin] #dock-tabs { background: #262626; border-left: 1px solid var(--cd-sep); gap: 3px; padding-top: 2px; width: 22px; }
-html[data-cd][data-skin="classic"][data-skin] .dtab { background: var(--cd-field); border: 0; border-radius: 3px; width: 20px; margin: 0 1px; padding: 6px 0 8px; font-size: 10.5px; color: #b4b4b4; display: flex; align-items: center; gap: 4px; }
+html[data-cd][data-skin="classic"][data-skin] .dtab { background: var(--cd-field); border: 0; border-radius: 3px; width: 20px; margin: 0 1px; padding: 6px 0 8px; font-size: 10px; color: #a8a8a8; display: flex; align-items: center; gap: 4px; }
 html[data-cd][data-skin="classic"][data-skin] .dtab.on { background: var(--cd-on); color: var(--cd-on-fg); box-shadow: none; font-weight: 400; }
 html[data-cd][data-skin="classic"][data-skin] .dtab .dti { writing-mode: horizontal-tb; display: inline-grid; place-items: center; width: 16px; height: 16px; }
 html[data-cd][data-skin="classic"][data-skin] .dtab .dti svg { width: 14px; height: 14px; }
@@ -224,7 +224,7 @@ html[data-cd][data-skin="classic"][data-skin] .row-btn { width: 22px; height: 22
   };
 
   // docker tabs get a small icon above their label
-  const ICONS = { props: 'fillTool', objects: 'layers', pages: 'pages', align: 'alignL', transform: 'rotate', step: 'duplicate', text: 'text', fonts: 'text', styles: 'palette', palettes: 'palette', symbols: 'star', comments: 'text', scripts: 'code', cut: 'ecCut', coords: 'grid', export: 'export', undo: 'undo', shaping: 'weld', guides: 'guides', color: 'palette', assets: 'star', odata: 'grid', links: 'link', hints: 'help' };
+  const ICONS = { props: 'fillTool', objects: 'layers', pages: 'pages', align: 'alignL', corners: 'cornerTool', transform: 'rotate', step: 'duplicate', text: 'text', fonts: 'text', styles: 'palette', palettes: 'palette', symbols: 'star', comments: 'text', scripts: 'code', cut: 'ecCut', coords: 'grid', export: 'export', undo: 'undo', shaping: 'weld', guides: 'guides', color: 'palette', assets: 'star', odata: 'grid', links: 'link', hints: 'help' };
   const decorate = () => {
     if (root.dataset.cd !== '1') return;
     document.querySelectorAll('#dock-tabs .dtab').forEach((b) => {

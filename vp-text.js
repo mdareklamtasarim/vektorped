@@ -423,7 +423,7 @@
       const free = Math.max(0, fx.h - P.used[col]);
       const yOff = fx.valign === 'middle' ? free / 2 : fx.valign === 'bottom' ? free : 0;
       const base = fx.y + top + yOff + half + m.asc;
-      if (fx.align === 'justify' && !ln.last && ln.words.length > 1) {
+      if (((fx.align === 'justify' && !ln.last) || fx.align === 'force') && ln.words.length > 1) {
         const ws = ln.words.map((w) => m(w));
         const gap = (colW - ws.reduce((a, b) => a + b, 0)) / (ln.words.length - 1);
         let x = x0;

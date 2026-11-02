@@ -35,7 +35,7 @@
   const loops = (it) => (it instanceof paper.CompoundPath ? it.children.slice() : [it]);
 
   /* =============== corners =============== */
-  const cornerPath = (path, type, R) => {
+  const cornerPath = (path, type, R, R2) => {
     const segs = path.segments;
     const n = segs.length;
     const out = [];
@@ -67,8 +67,10 @@
       // distance from the corner to where the new edge starts on each side
       let t = type === 'fillet' ? R / Math.tan(phi / 2) : R;
       t = Math.min(t, v1.length * 0.5, v2.length * 0.5);
+      // a chamfer can cut unequal distances on the two sides (A before the corner, B after it)
+      const t2 = type === 'chamfer' && R2 != null ? Math.min(R2, v1.length * 0.5, v2.length * 0.5) : t;
       const P1 = s.point.add(u1.multiply(t));
-      const P2 = s.point.add(u2.multiply(t));
+      const P2 = s.point.add(u2.multiply(t2));
       changed++;
       if (type === 'chamfer') {
         out.push(new paper.Segment(P1), new paper.Segment(P2));
@@ -88,14 +90,15 @@
     }
     return changed;
   };
-  O.corners = (type, mm) => {
+  O.corners = (type, mm, mm2) => {
     const items = plainPaths();
     if (!items.length) return VP.toast('Köşe işlemleri için eğri veya şekil seçin');
     const R = VP.toPT(mm);
+    const R2 = mm2 != null ? VP.toPT(mm2) : null;
     let n = 0;
     items.forEach((it) => {
       delete it.data.param;
-      loops(it).forEach((p) => (n += cornerPath(p, type, R)));
+      loops(it).forEach((p) => (n += cornerPath(p, type, R, R2)));
     });
     if (!n) return VP.toast('Seçimde düz kenarlı köşe yok · Köşe işlemleri düz kenarların birleştiği köşelere uygulanır');
     VP.commit();

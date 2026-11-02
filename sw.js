@@ -1,6 +1,6 @@
 /* VektörPad offline worker: keeps every file of the app on the iPad so it opens without internet.
    A new version of the package (a different VERSION) is downloaded in the background when online. */
-const VERSION = '0573b4db657e';
+const VERSION = 'ba73c7552e87';
 const CACHE = 'vektorpad-' + VERSION;
 const FILES = [
  "./",
@@ -59,6 +59,9 @@ const FILES = [
  "vp-cmds.js",
  "vp-color.js",
  "vp-core.js",
+ "vp-corel3.js",
+ "vp-corel4.js",
+ "vp-corel5.js",
  "vp-ctx.js",
  "vp-curves.js",
  "vp-doc.js",

@@ -9,7 +9,7 @@
   const S = VP.settings;
   const $ = (q) => document.querySelector(q);
   const esc = UI.h.esc;
-  const DEFAULT = ['props', 'hints', 'text', 'objects', 'pages', 'align', 'transform'];
+  const DEFAULT = ['props', 'objects', 'transform', 'corners', 'align', 'text'];
   const known = (k) => UI.DOCKERS.some(([x]) => x === k);
   const list = () => {
     if (!Array.isArray(S.dockOpen)) S.dockOpen = DEFAULT.filter(known);
