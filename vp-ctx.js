@@ -10,13 +10,13 @@
 
   // menu for a selection, top to bottom
   const OBJECT = [
-    'toCurves', 'zoomSel', 'breakApart', 'combine', 'group', 'ungroup', 'ungroupAll', '|',
+    'toCurves', 'k7Focus', 'breakApart', 'combine', 'group', 'ungroup', 'ungroupAll', '|',
     'ctxEditArt', 'txEditText', 'textProps', 'txToPara', 'txToArtistic', 'txFitPath', 'txUnpath', 'txFitText', 'txFitFrame', '|',
     'sub:Tablo|tRowAbove,tRowBelow,tColLeft,tColRight,tDelRow,tDelCol,tMerge,tSplit,tDistRows,tDistCols,tableToText,tDelTable',
     'cut', 'copy', 'paste', 'delete', 'duplicate', '|',
     'sub:Sırala|toFront,forward,backward,toBack,inFrontOf,behindOf,reverseOrder,toLayer,copyToLayer', '|',
     'hide', 'lock', '|',
-    'fxPowerclip', 'sub:PowerClip|fxPowerclip2,pcCenter,pcFit,pcFill', '|',
+    'fxPowerclip', 'sub:PowerClip|fxPowerclip2,pcCenter,pcFit,pcFill', 'sub:Çerçeve türü|k7FrameEmpty,k7FramePlace,k7FrameNone', '|',
     'symNew', 'symEdit', 'symFinish', '|',
     'toSymbol', 'breakSymbol', '|',
     'sub:İnternet bağlantıları|k6Link', '|',
@@ -27,8 +27,8 @@
     'sub:Efektler|shadowToggle,fxBevel,fxSeparate,fxClear',
     'sub:Eğri|closePath,joinCurves,reversePath,parallelCurve,corners',
     'stepRepeat', 'copyProps', 'fitObjPath', 'outlineToObj', 'nfxAddA', 'fxCopyFrom', 'txLink', 'txUnlink', 'txOpenType', 'toBitmap', 'ecCut', 'exportAddSel', '|',
-    'sub:Paragraf metnini sar|wrapContour,wrapBox,wrapNone,wrapOffset', '|',
-    'opFill', 'opStroke', 'k6PixGrid', '|',
+    'sub:Paragraf metnini sar|wrapContour,wrapBox,wrapNone,wrapOffset', 'k7ConnWrap', '|',
+    'opFill', 'opStroke', 'k7Hints', 'k6PixGrid', '|',
     'dockProps', 'dockObjects'
   ];
   // menu for an empty spot on the page
@@ -38,7 +38,7 @@
     'fit', 'zoom100', '|',
     'grid', 'guides', 'snap', '|',
     'addPage', 'pageSetup', 'pageBg', '|',
-    'unlockAll', 'showAll', '|',
+    'unlockAll', 'showAll', 'k7FocusExit', '|',
     'insertQR', 'insertBarcode', 'symNew', 'symFinish', '|',
     'dockProps', 'dockObjects'
   ];

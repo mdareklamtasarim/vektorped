@@ -318,6 +318,8 @@
       const my = (a.y + b.y) / 2;
       pts = [a, Pt(a.x, my), Pt(b.x, my), b];
     }
+    // lines can go around objects marked "wrap connector line"
+    if (fx.kind !== 'straight' && VP.connAvoid) pts = VP.connAvoid(pts, g, objA, objB) || pts;
     pts = pts.filter((p, i) => i === 0 || p.getDistance(pts[i - 1]) > 1e-6);
     const path = new paper.Path({ insert: false });
     if (fx.kind === 'round' && pts.length > 2) {

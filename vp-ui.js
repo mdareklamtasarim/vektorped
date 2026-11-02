@@ -361,7 +361,7 @@
     const dn = $('#doc-name');
     if (document.activeElement !== dn) dn.value = VP.doc.name;
     $('#btn-dock').classList.toggle('on', !$('#dock').hidden);
-    $('#win-title').textContent = VP.doc.name + ' · VektörPad 28';
+    $('#win-title').textContent = VP.doc.name + ' · VektörPad 29';
     document.querySelectorAll('#stdbar [data-cmd]').forEach((b) => {
       const a = A[b.dataset.cmd];
       if (a && a.checked) {

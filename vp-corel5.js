@@ -118,6 +118,7 @@
       ls.slice().reverse().forEach((L) => {
         if (isMaster(L)) h += layerRow(L, ls.indexOf(L), 1);
       });
+      if (!ls.some((L) => L.data && L.data.desktop)) h += '<div class="layer-row k5-row k5-sys" style="padding-left:22px">' + sp + '<span class="obj-kind">' + svg(I.page) + '</span><span class="row-name">Masaüstü</span><button class="row-btn" data-act="k7Desktop" aria-label="Masaüstü katmanı oluştur" title="Masaüstü katmanı oluştur (her sayfada görünür, yazdırılmaz)">' + ic('plus', 'sm') + '</button></div>';
       h += sysRow(I.grid, 'Belge ızgarası', 1, !!S.grid, 'k5Grid', 'Izgarayı göster / gizle');
     }
     h += '</div>';

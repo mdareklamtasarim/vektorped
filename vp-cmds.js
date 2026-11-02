@@ -1032,6 +1032,7 @@
     whatsNew: {
       label: 'Yenilikler',
       run: () => info('Yenilikler', '<dl class="help-grid">' +
+        '<dt>Sürüm 29</dt><dd><b>Odağa getir</b> (sağ tık / Görünüm): yalnızca seçili nesnelerle çalışma, diğerleri soluk ve seçilemez, Esc ile çıkış · <b>Çerçeve türü</b>: boş PowerClip çerçevesi oluşturma (çarpı işaretiyle görünür), çerçeveye resim yerleştirme, çerçeveyi kaldırma · <b>Bağlayıcı çizgiyi sar</b>: dik açılı ve yuvarlak bağlantı çizgileri işaretli nesnelerin etrafından dolaşır · <b>Nesne ipucu</b>: işaretçinin altındaki nesnenin adı, katmanı, boyutu, dolgusu ve anahatı · <b>Masaüstü katmanı</b> (Mizanpaj menüsü ve Nesneler paneli): her sayfada görünür, yazdırılmaz · Paragraf metninde harf aralığı satır kırılmasında hesaba katılır</dd>' +
         '<dt>Sürüm 28</dt><dd><b>Paneller masaüstü düzeninde</b>: başlıkta » (daralt) · yeni <b>Köşeler</b> paneli (yuvarlat, oy, pah; A/B mesafesi) · <b>Hizala ve Dağıt</b>: simgeler, etkin nesneye / sayfa kenarına / sayfa ortasına / ızgaraya / belirtilen noktaya hizalama, 8 dağıtma türü, sayfaya veya sabit aralıkla dağıtma, metin taban çizgisi, piksel ızgarası · <b>Dönüştür</b>: Konum, Döndür, Ölçek ve ayna, Boyut, Eğ sekmeleri, 9 noktalı referans, kopya sayısı · <b>Metin</b>: harf aralığı, altı çizili, karakter arka planı, anahat kalınlığı, 6 hizalama (zorla iki yana dahil), satır aralığı birimi, paragraf öncesi boşluk, çerçeve arka planı · <b>Nesneler</b>: arama, sayfa ve ana sayfa ağacı, katman başına yazdır ve renk, alt araç çubuğu · Uzun CMYK paleti, kaydırma çubukları ve gezgin, durum çubuğunda CMYK, özellik çubuğunda referans noktası ve ok düğmeleri, simgeli fırça modları, Yeni/Aç/Geri al/Yinele açılır listeleri</dd>' +
         '<dt>Sürüm 27</dt><dd><b>Masaüstü görünümü</b>: koyu renkler, ince çubuklar, simgeli panel sekmeleri, iki sütunlu palet · <b>Paneller</b>: + sekmesi ve Pencere › Paneller ile hangi panellerin görüneceğini seçme, × ile kapatma · <b>Dikdörtgen köşeleri</b>: yuvarlak, oyuk, pah; dört köşe ayrı ayrı (kilitle birlikte) · Özellik çubuğunda üst üste X/Y, En/Boy, ölçek yüzdesi ve anahat kalınlığı · Sağ tık menüsü masaüstü sırasında</dd>' +
         '<dt>Sürüm 26</dt><dd><b>Yazı tipi yöneticisi</b> (Metin menüsü): iPad’deki yazı tipi dosyalarını yükleme (.ttf, .otf, .woff, .woff2; bu cihazda saklanır, açılışta geri gelir), Google Fonts’tan adıyla yazı tipi ekleme, eklenenleri yönetme · Yüklenen dosya yazı tipleri eğriye dönüştürme, zarf ve perspektifte de çalışır</dd>' +
@@ -1054,7 +1055,7 @@
     },
     about: {
       label: 'VektörPad hakkında',
-      run: () => info('VektörPad', '<p>Sürüm 28 · iPad için vektör çizim uygulaması.</p><p>Masaüstü çizim programlarının çalışma düzeninden esinlenen özgün bir uygulamadır; başka bir programın kodu, simgeleri veya dosyaları kullanılmaz.</p><p>Yazı tipi: Fira Sans, SIL Open Font License 1.1.</p>')
+      run: () => info('VektörPad', '<p>Sürüm 29 · iPad için vektör çizim uygulaması.</p><p>Masaüstü çizim programlarının çalışma düzeninden esinlenen özgün bir uygulamadır; başka bir programın kodu, simgeleri veya dosyaları kullanılmaz.</p><p>Yazı tipi: Fira Sans, SIL Open Font License 1.1.</p>')
     }
   });
   A.rulers.icon = 'ruler';

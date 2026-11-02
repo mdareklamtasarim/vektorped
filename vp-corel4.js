@@ -19,7 +19,7 @@
   const svg = (body) => '<svg class="i sm" viewBox="0 0 24 24" aria-hidden="true">' + body + '</svg>';
 
   /* ---------- underline and character background ---------- */
-  const otOf = (t) => (t.data && t.data.ot) || null;
+  const otOf = (t) => (VP.text3 && VP.text3.otOf ? VP.text3.otOf(t) : (t.data && t.data.ot) || null);
   // line boxes in the text's own coordinates: [{x, y (baseline), w}]
   const lineBoxes = (t, ctx) => {
     const lines = t._lines || String(t.content || '').split(/\r\n|\n|\r/);
@@ -274,7 +274,10 @@
         TD.applyPara((t, fx) => {
           const track = clamp(v, -50, 200) * 10;
           if (t instanceof paper.PointText) t.data.ot = Object.assign({}, t.data.ot || {}, { track });
-          else if (fx) fx.ot = Object.assign({}, fx.ot || {}, { track });
+          else if (fx) {
+            fx.ot = Object.assign({}, fx.ot || {}, { track });
+            if (fx.font) fx.font.track = track;
+          }
           rebuild(t);
         });
         break;
