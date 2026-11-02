@@ -236,6 +236,7 @@ html[data-cd][data-skin="classic"][data-skin] .row-btn { width: 22px; height: 22
       b.insertBefore(s, b.firstChild);
     });
   };
+  UI._decorateDockTabs = decorate;
   if (UI.renderDockTabs) {
     const rt0 = UI.renderDockTabs;
     UI.renderDockTabs = function () {
