@@ -10,7 +10,7 @@
 
   // menu for a selection, top to bottom
   const OBJECT = [
-    'toCurves', 'k7Focus', 'breakApart', 'combine', 'group', 'ungroup', 'ungroupAll', '|',
+    'toCurves', 'k7Focus', 'breakApart', 'pkDig', 'combine', 'group', 'ungroup', 'ungroupAll', '|',
     'ctxEditArt', 'txEditText', 'textProps', 'txToPara', 'txToArtistic', 'txFitPath', 'txUnpath', 'txFitText', 'txFitFrame', '|',
     'sub:Tablo|tRowAbove,tRowBelow,tColLeft,tColRight,tDelRow,tDelCol,tMerge,tSplit,tDistRows,tDistCols,tableToText,tDelTable',
     'cut', 'copy', 'paste', 'delete', 'duplicate', '|',
