@@ -414,7 +414,19 @@
       case 'k3AlOutline': S.alOutline = !S.alOutline; break;
       case 'k3PixGrid': K3.pixelGrid(); break;
       case 'k3Tab': TR.tab = arg; break;
-      case 'k3Anc': S.trAnc = arg; break;
+      case 'k3Anc': {
+        S.trAnc = arg;
+        // Position with relative position: the side picked moves the object by its own width or height,
+        // so copies line up next to each other
+        if (TR.tab === 'pos' && TR.rel && hasSel()) {
+          const b = VP.selBounds();
+          const fx = { l: -1, c: 0, r: 1 }[{ tl: 'l', ml: 'l', bl: 'l', tc: 'c', cc: 'c', bc: 'c', tr: 'r', mr: 'r', br: 'r' }[arg]];
+          const fy = { t: -1, m: 0, b: 1 }[{ tl: 't', tc: 't', tr: 't', ml: 'm', cc: 'm', mr: 'm', bl: 'b', bc: 'b', br: 'b' }[arg]];
+          TR.x = Math.round(VP.toMM(b.width) * fx * 1000) / 1000;
+          TR.y = Math.round(VP.toMM(b.height) * fy * 1000) / 1000;
+        }
+        break;
+      }
       case 'k3TrRel': TR.rel = !TR.rel; TR.x = TR.y = 0; break;
       case 'k3TrProp': TR.prop = !TR.prop; break;
       case 'k3TrMh': TR.mh = !TR.mh; break;
