@@ -300,7 +300,7 @@
       const items = (A.whatsNew && document.createElement('div')) || null;
       void items;
       return '<h2>Yenilikler</h2><p class="sec-note">Ayrıntılı liste: Yardım › Yenilikler</p><dl>' +
-        [['Sürüm 30', 'Seçim aracı masaüstü programdaki gibi: Ctrl+tık grup içi, Alt+tık alttaki, sürüklerken kopya bırakma, sağ tuşla sürükleyip bırakma menüsü'], ['Sürüm 29', 'Odağa getir, çerçeve türü (boş PowerClip çerçevesi), bağlayıcı çizgiyi sarma, nesne ipucu, masaüstü katmanı, paragrafta harf aralığı'], ['Sürüm 28', 'Corel düzeninde paneller: Köşeler, Hizala ve Dağıt, Dönüştür sekmeleri, yeni Metin ve Nesneler panelleri; uzun CMYK paleti, kaydırma çubukları, gezgin'], ['Sürüm 27', 'CorelDRAW benzeri koyu görünüm, seçilebilir paneller, dikdörtgende köşe türleri ve dört ayrı köşe, üst üste dizilmiş özellik çubuğu'], ['Sürüm 26', 'Yazı tipi yöneticisi: dosyadan yazı tipi yükleme, Google Fonts’tan ekleme'],
+        [['Sürüm 31', 'İçi boş nesneler içinden tıklanarak seçilir; seçim tutamaçları ve döndürme/eğme işaretleri masaüstü programın renk ve biçiminde'], ['Sürüm 30', 'Seçim aracı masaüstü programdaki gibi: Ctrl+tık grup içi, Alt+tık alttaki, sürüklerken kopya bırakma, sağ tuşla sürükleyip bırakma menüsü'], ['Sürüm 29', 'Odağa getir, çerçeve türü (boş PowerClip çerçevesi), bağlayıcı çizgiyi sarma, nesne ipucu, masaüstü katmanı, paragrafta harf aralığı'], ['Sürüm 28', 'Corel düzeninde paneller: Köşeler, Hizala ve Dağıt, Dönüştür sekmeleri, yeni Metin ve Nesneler panelleri; uzun CMYK paleti, kaydırma çubukları, gezgin'], ['Sürüm 27', 'CorelDRAW benzeri koyu görünüm, seçilebilir paneller, dikdörtgende köşe türleri ve dört ayrı köşe, üst üste dizilmiş özellik çubuğu'], ['Sürüm 26', 'Yazı tipi yöneticisi: dosyadan yazı tipi yükleme, Google Fonts’tan ekleme'],
           ['Sürüm 25', 'Kısayol ve araç çubuğu özelleştirme, renk ayarları, Renk paneli, Varlıklar paneli'],
           ['Sürüm 24', '31 yeni biteşlem efekti (3B, sanatsal darbeler, mercek parlaması, vitray, hava…), JPEG temizleme, RGB/Lab/CMYK modları'],
           ['Sürüm 23', 'OpenType yazı ayarları ve değişken yazı tipleri, metni düzleştir, basılmayan karakterler, bindirme baskı, nesne verileri, bağlantılar ve yer imleri, bağlantı noktası aracı'],
@@ -328,7 +328,7 @@
   };
   const render = () => {
     if (!wl) return;
-    wl.innerHTML = '<nav><div class="wl-brand">' + ($('.brand svg') ? $('.brand').innerHTML : '') + 'VektörPad <small style="font:600 12px var(--font-ui);color:var(--muted)">sürüm 30</small></div>' +
+    wl.innerHTML = '<nav><div class="wl-brand">' + ($('.brand svg') ? $('.brand').innerHTML : '') + 'VektörPad <small style="font:600 12px var(--font-ui);color:var(--muted)">sürüm 31</small></div>' +
       [['start', 'Başlarken'], ['new', 'Yenilikler'], ['learn', 'Öğrenme'], ['ws', 'Çalışma alanı']].map(([k, l]) => '<button data-wtab="' + k + '" class="' + (wlState.tab === k ? 'on' : '') + '">' + l + '</button>').join('') +
       '<label><input type="checkbox" data-wl="startup"' + (VP.settings.welcome !== false ? ' checked' : '') + '>Başlangıçta göster</label></nav><div class="wl-main">' + content() + '</div>';
   };

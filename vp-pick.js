@@ -42,13 +42,67 @@
   const allAt = (pt) => {
     const tol = (VP.coarse ? 10 : 6) / zoom();
     const res = paper.project.hitTestAll(pt, { fill: true, stroke: true, segments: false, curves: false, pixel: true, tolerance: tol, match: (r) => VP.isSelectable(r.item) });
-    const out = [];
+    const hits = [];
     (res || []).forEach((r) => {
       const t = topLevel(r.item);
-      if (t && !out.includes(t)) out.push(t);
+      if (t && !hits.includes(t)) hits.push(t);
     });
+    if (!PK.filledOn()) return hits;
+    const all = VP.allSelectable();
+    const out = [];
+    for (let i = all.length - 1; i >= 0; i--) if (hits.includes(all[i]) || leafAt(all[i], pt)) out.push(all[i]);
     return out;
   };
+  /* ---------- objects count as filled: a click inside an empty shape picks it ---------- */
+  const tolPx = () => (VP.coarse ? 10 : 6) / zoom();
+  const leafAt = (it, pt) => {
+    if (!it.visible || !it.bounds.expand(tolPx() * 2).contains(pt)) return null;
+    if (it instanceof paper.Group) {
+      if (it.clipped && it.children[0]) return it.children[0].contains && it.children[0].contains(pt) ? it : null;
+      for (let i = it.children.length - 1; i >= 0; i--) {
+        const r = leafAt(it.children[i], pt);
+        if (r) return r;
+      }
+      return null;
+    }
+    if (it instanceof paper.CompoundPath) return it.contains(pt) ? it : null;
+    if (it instanceof paper.Path) return it.closed && it.contains(pt) ? it : null;
+    if (it instanceof paper.PointText || it instanceof paper.Raster) return it.bounds.contains(pt) ? it : null;
+    return null;
+  };
+  PK.filledOn = () => S.treatFilled !== false;
+  const filledTools = ['select', 'node'];
+  const filledAt = (pt, opts) => {
+    const all = VP.allSelectable().filter((it) => !(opts && opts.exclude && opts.exclude.includes(it)));
+    for (let i = all.length - 1; i >= 0; i--) {
+      const leaf = leafAt(all[i], pt);
+      if (leaf) return opts && opts.deep ? leaf : all[i];
+    }
+    return null;
+  };
+  const hit0 = VP.hitItem;
+  VP.hitItem = function (pt, opts) {
+    const r = hit0.apply(this, arguments);
+    if (r || !PK.filledOn() || !filledTools.includes(VP.toolId)) return r;
+    return filledAt(pt, opts || {});
+  };
+  PK.filledAt = filledAt;
+  VP.actions.pkFilled = {
+    label: 'Tüm nesneleri dolu kabul et',
+    checked: () => PK.filledOn(),
+    run: () => {
+      S.treatFilled = !PK.filledOn();
+      try {
+        VP.io.savePrefs();
+      } catch (e) { /* optional */ }
+      VP.toast(S.treatFilled ? 'İçi boş nesneler de içinden tıklanarak seçilir' : 'İçi boş nesneler yalnızca anahatından seçilir');
+    }
+  };
+  {
+    const M = UI.MENUS.view;
+    if (M && !M.includes('pkFilled')) M.splice(M.includes('pencilOnly') ? M.indexOf('pencilOnly') + 1 : M.length, 0, 'pkFilled');
+  }
+
   const moveOp = (hit, e, wasSel) => ({ type: 'move', start: e.point, moved: false, wasSel, hit, origin: VP.selBounds().topLeft });
 
   const down0 = sel.down;
@@ -219,32 +273,115 @@
     }
   });
 
-  /* ---------- handles just outside the selection ---------- */
+  /* ---------- selection marks, measured from the desktop program ---------- */
+  // scale handles: solid black squares just outside the box; rotate mode: thin dark arcs at the corners,
+  // small double arrows at the edge middles and a ring with a dot at the centre; object nodes: small
+  // hollow squares. On a dark desk the colours turn light.
+  const desk = () => {
+    try {
+      return new paper.Color(getComputedStyle(document.documentElement).getPropertyValue('--paste').trim() || '#ffffff').gray > 0.5;
+    } catch (e) {
+      return true;
+    }
+  };
+  const C = (light, a, b) => new paper.Color(light ? a : b);
+  const nodePoints = (it) => {
+    const p = it.data && it.data.param;
+    if (p && p.kind === 'rect') {
+      const m = new paper.Matrix().translate(p.cx, p.cy).rotate(p.angle || 0);
+      const w = Math.abs(p.w) / 2;
+      const h = Math.abs(p.h) / 2;
+      return [Pt(-w, -h), Pt(w, -h), Pt(w, h), Pt(-w, h)].map((q) => m.transform(q));
+    }
+    if (p && p.kind === 'ellipse') return [new paper.Matrix().translate(p.cx, p.cy).rotate(p.angle || 0).transform(Pt(0, -Math.abs(p.h) / 2))];
+    const out = [];
+    const add = (path) => path.segments && path.segments.forEach((sg) => out.length < 160 && out.push(sg.point));
+    if (it instanceof paper.Path) add(it);
+    else if (it instanceof paper.CompoundPath) it.children.forEach(add);
+    return out;
+  };
   const draw0 = VP.drawSelectionOverlay;
   VP.drawSelectionOverlay = function (L) {
-    if (!classic() || !VP.sel.length) return draw0.call(this, L);
-    const sb0 = VP.selBounds;
-    const before = L.children.length;
-    const off = (VP.coarse ? 5 : 4) / zoom();
-    try {
-      const b = sb0().expand(off * 2);
-      VP.selBounds = (items) => (items && items !== VP.sel ? sb0(items) : b.clone());
-      draw0.call(this, L);
-    } finally {
-      VP.selBounds = sb0;
-    }
-    const added = L.children.slice(before);
+    if (!classic()) return draw0.call(this, L);
+    VP.pruneSel();
+    if (!VP.sel.length) return;
+    const s = 1 / zoom();
+    const k = VP.coarse ? 1.45 : 1;
+    const light = desk();
+    const ink = C(light, '#000000', '#f2f2f2');
+    const dark = C(light, '#252525', '#e6e6e6');
+    const b = VP.selBounds();
+    const off = 4.5 * s * k;
     const child = VP.sel.some((it) => it.parent && !(it.parent instanceof paper.Layer));
-    const hsMax = 14 / zoom();
-    added.forEach((c) => {
-      // no frame line around each object of a multiple selection
-      if (c.dashArray && c.dashArray.length && c.opacity < 1) return c.remove();
-      // objects inside a group: round handles
-      if (child && c instanceof paper.Path && c.segments.length === 4 && c.closed && c.fillColor && Math.abs(c.bounds.width - c.bounds.height) < 1e-6 && c.bounds.width < hsMax) {
-        const r = new paper.Path.Circle({ center: c.bounds.center, radius: c.bounds.width / 2, fillColor: c.fillColor, strokeColor: c.strokeColor, strokeWidth: c.strokeWidth, insert: false });
-        c.replaceWith(r);
-      }
+    // nodes of a single selected object
+    if (VP.sel.length === 1) {
+      const pts = nodePoints(VP.sel[0]);
+      const ns = 4 * s * k;
+      pts.forEach((q) => L.addChild(new paper.Path.Rectangle({ rectangle: new paper.Rectangle(q.subtract(ns / 2), new paper.Size(ns, ns)), fillColor: C(light, '#ffffff', '#262626'), strokeColor: C(light, '#666666', '#b0b0b0'), strokeWidth: 1 * s, insert: false })));
+    }
+    const pos = {
+      tl: b.topLeft.add(Pt(-off, -off)), tc: b.topCenter.add(Pt(0, -off)), tr: b.topRight.add(Pt(off, -off)), mr: b.rightCenter.add(Pt(off, 0)),
+      br: b.bottomRight.add(Pt(off, off)), bc: b.bottomCenter.add(Pt(0, off)), bl: b.bottomLeft.add(Pt(-off, off)), ml: b.leftCenter.add(Pt(-off, 0))
+    };
+    if (VP.handleMode === 'rotate') {
+      const R = 10 * s * k;
+      const span = 32;
+      [['tl', b.topLeft, -135], ['tr', b.topRight, -45], ['br', b.bottomRight, 45], ['bl', b.bottomLeft, 135]].forEach(([id, c, ang]) => {
+        const P = (a) => c.add(Pt(R, 0).rotate(a));
+        L.addChild(new paper.Path.Arc({ from: P(ang - span), through: P(ang), to: P(ang + span), strokeColor: dark, strokeWidth: 1.9 * s * k, strokeCap: 'round', insert: false }));
+      });
+      const arrow = (c, dir) => {
+        const len = 4.2 * s * k;
+        const hd = 2.2 * s * k;
+        const n = Pt(-dir.y, dir.x);
+        const a1 = c.subtract(dir.multiply(len));
+        const a2 = c.add(dir.multiply(len));
+        L.addChild(new paper.Path.Line({ from: a1, to: a2, strokeColor: ink, strokeWidth: 1.2 * s * k, insert: false }));
+        [[a1, dir], [a2, dir.multiply(-1)]].forEach(([tip, d]) => L.addChild(new paper.Path({ segments: [tip, tip.add(d.multiply(hd)).add(n.multiply(hd)), tip.add(d.multiply(hd)).subtract(n.multiply(hd))], closed: true, fillColor: ink, insert: false })));
+      };
+      const so = 6 * s * k;
+      arrow(b.topCenter.add(Pt(0, -so)), Pt(1, 0));
+      arrow(b.bottomCenter.add(Pt(0, so)), Pt(1, 0));
+      arrow(b.leftCenter.add(Pt(-so, 0)), Pt(0, 1));
+      arrow(b.rightCenter.add(Pt(so, 0)), Pt(0, 1));
+      const cc = VP.pivot || b.center;
+      L.addChild(new paper.Path.Circle({ center: cc, radius: 4.3 * s * k, fillColor: C(light, '#ffffff', '#262626'), strokeColor: dark, strokeWidth: 1.4 * s * k, insert: false }));
+      L.addChild(new paper.Path.Circle({ center: cc, radius: 1.3 * s * k, fillColor: dark, insert: false }));
+      return;
+    }
+    const hs = 5 * s * k;
+    Object.keys(pos).forEach((id) => {
+      const q = pos[id];
+      const shape = child
+        ? new paper.Path.Circle({ center: q, radius: hs / 2 + 0.4 * s, insert: false })
+        : new paper.Path.Rectangle({ rectangle: new paper.Rectangle(q.subtract(hs / 2), new paper.Size(hs, hs)), insert: false });
+      shape.fillColor = ink;
+      L.addChild(shape);
     });
+    const c = b.center;
+    const x = 2 * s * k;
+    const xc = C(light, '#555555', '#bdbdbd');
+    [[Pt(-x, -x), Pt(x, x)], [Pt(-x, x), Pt(x, -x)]].forEach(([p1, p2]) => L.addChild(new paper.Path.Line({ from: c.add(p1), to: c.add(p2), strokeColor: xc, strokeWidth: 1 * s * k, insert: false })));
+  };
+  // the marks sit a little outside the box: grab them there too
+  const hh0 = VP.hitHandle;
+  VP.hitHandle = function (pt) {
+    const r = hh0.apply(this, arguments);
+    if (r || !classic() || !VP.sel.length) return r;
+    const s = 1 / zoom();
+    const k = VP.coarse ? 1.45 : 1;
+    const b = VP.selBounds();
+    const off = (VP.handleMode === 'rotate' ? 9 : 4.5) * s * k;
+    const tol = (VP.coarse ? 22 : 11) * s;
+    let best = null;
+    VP.handlesOf(b).forEach((h) => {
+      const dir = h.p.subtract(b.center);
+      const unit = Pt(Math.sign(Math.round(dir.x * 1000)), Math.sign(Math.round(dir.y * 1000)));
+      const q = h.p.add(unit.normalize(off));
+      const d = q.getDistance(pt);
+      if (d <= tol && (!best || d < best.d)) best = Object.assign({ d }, h);
+    });
+    return best;
   };
 
   /* ---------- right-button drag ---------- */
