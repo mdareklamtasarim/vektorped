@@ -532,7 +532,7 @@
     if (!item) return VP.toast('Derinlik için bir nesne seçin');
     if (item instanceof paper.PointText) {
       const cp = VP.textToPath(item);
-      if (!cp) return VP.toast('Yalnızca Fira Sans metinler derinlik alabilir · Önce eğriye dönüştürün');
+      if (!cp) return VP.toast('Bu metin eğriye dönüştürülemedi · Önce eğriye dönüştürün');
       item = cp;
     }
     if (!FX.isShape(item)) return VP.toast('Derinlik eğrilerle çalışır · Grupları önce çözün');
@@ -783,7 +783,7 @@
     if (!contents.length) return VP.toast('PowerClip için önce içerik seçin');
     if (frame instanceof paper.PointText) {
       const cp = VP.textToPath(frame);
-      if (!cp) return VP.toast('Kap olarak yalnızca Fira Sans metin kullanılabilir · Önce eğriye dönüştürün');
+      if (!cp) return VP.toast('Bu metin kap olarak kullanılamadı · Önce eğriye dönüştürün');
       frame = cp;
     }
     if (!FX.isShape(frame) || (frame instanceof paper.Path && !frame.closed)) return VP.toast('Kap kapalı bir şekil olmalı');

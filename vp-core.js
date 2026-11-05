@@ -1053,7 +1053,7 @@
     VP.sel.forEach((it) => out.push(conv(it)));
     VP.setSelection(out);
     if (changed) VP.commit();
-    if (skipped) VP.toast('Yalnızca Fira Sans yazı tipindeki metinler eğriye dönüştürülebilir');
+    if (skipped) VP.toast(skipped + ' metin eğriye dönüştürülemedi');
     else if (changed) VP.toast('Eğriye dönüştürüldü');
   };
 
