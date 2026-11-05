@@ -94,20 +94,84 @@
         ib('k3CrLock', ic(c.crLock ? 'lock' : 'unlock', 'sm'), c.crLock ? 'A ve B birlikte' : 'A ve B ayrı', c.crLock) + '</div>';
     }
     h += '<div class="row" style="justify-content:flex-end"><button class="btn primary" data-act="k3CrApply"' + (hasSel() ? '' : ' disabled') + '>Uygula</button></div>';
-    h += '<p class="sec-note k3-info">ⓘ Köşe özellikleri eğri olmayan bir nesneye uygulandığında nesne eğriye dönüştürülür.</p>';
+    h += '<p class="sec-note k3-info">ⓘ Dikdörtgenler canlı kalır, köşeleri yeniden ayarlanabilir. Diğer şekiller eğriye dönüştürülür; tekrar Uygula derseniz yuvarlamadan önceki halleri üzerinden yeniden uygulanır.</p>';
     return h;
   };
+  // corners can be applied again and again: rectangles stay live (type and size are simply replaced);
+  // other curves remember their shape from before rounding and are rounded again from that shape
+  const segsOf = (path) => path.segments.map((g) => [g.point.x, g.point.y, g.handleIn.x, g.handleIn.y, g.handleOut.x, g.handleOut.y]);
+  const shapeOf = (it) => (it instanceof paper.CompoundPath ? it.children.map((c) => ({ s: segsOf(c), c: c.closed })) : [{ s: segsOf(it), c: it.closed }]);
+  // a fingerprint that survives moving the object
+  const printOf = (it) => {
+    const sh = shapeOf(it);
+    const o = sh[0] && sh[0].s[0] ? [sh[0].s[0][0], sh[0].s[0][1]] : [0, 0];
+    let h = 0;
+    sh.forEach((l) => l.s.forEach((g) => g.forEach((v, i) => {
+      const x = Math.round((i === 0 ? v - o[0] : i === 1 ? v - o[1] : v) * 100);
+      h = (h * 31 + x) | 0;
+    })));
+    return sh.reduce((n, l) => n + l.s.length, 0) + ':' + h;
+  };
+  const firstPt = (it) => {
+    const sh = shapeOf(it);
+    return sh[0] && sh[0].s[0] ? [sh[0].s[0][0], sh[0].s[0][1]] : [0, 0];
+  };
+  // back to the shape before rounding, shifted by however far the object moved since it was rounded
+  const restoreShape = (it, src) => {
+    const now = firstPt(it);
+    const was = it.data.cornerAt || now;
+    const dx = now[0] - was[0];
+    const dy = now[1] - was[1];
+    const mk = (l) => new paper.Path({ segments: l.s.map((g) => new paper.Segment(Pt(g[0] + dx, g[1] + dy), Pt(g[2], g[3]), Pt(g[4], g[5]))), closed: l.c, insert: false });
+    if (it instanceof paper.CompoundPath) {
+      it.removeChildren();
+      src.forEach((l) => it.addChild(mk(l)));
+    } else {
+      it.segments = mk(src[0]).segments;
+      it.closed = src[0].c;
+    }
+    it.data.cornerSrc = shapeOf(it);
+  };
+  const isRect = (it) => it.data && it.data.param && it.data.param.kind === 'rect' && !FXx(it);
+  const FXx = (it) => VP.fx && VP.fx.isFx && VP.fx.isFx(it);
   K3.applyCorners = () => {
     const c = CR();
     if (!VP.objops || !VP.objops.corners) return;
     VP.defaults.cornerType = c.crType;
-    if (c.crType === 'chamfer') {
-      VP.defaults.cornerMM = c.crA;
-      VP.objops.corners('chamfer', c.crA, c.crLock ? c.crA : c.crB);
-    } else {
-      VP.defaults.cornerMM = c.crR;
-      VP.objops.corners(c.crType, c.crR);
-    }
+    const R = c.crType === 'chamfer' ? c.crA : c.crR;
+    VP.defaults.cornerMM = R;
+    const asym = c.crType === 'chamfer' && !c.crLock && Math.abs(c.crA - c.crB) > 1e-6;
+    // live rectangles: only the corner type and size change
+    const rects = asym ? [] : VP.sel.filter(isRect);
+    rects.forEach((it) => {
+      const p = it.data.param;
+      if (c.crType === 'fillet') delete p.ct;
+      else p.ct = c.crType;
+      delete p.rs;
+      delete p._rmax;
+      p.r = Math.max(0, VP.toPT(R));
+      VP.rebuildParam(it);
+    });
+    const others = VP.sel.filter((it) => !rects.includes(it) && VP.isPathItem(it) && !FXx(it));
+    others.forEach((it) => {
+      const src = it.data.cornerSrc;
+      if (src && it.data.cornerPrint && it.data.cornerPrint === printOf(it)) restoreShape(it, src);
+      else it.data.cornerSrc = shapeOf(it);
+    });
+    if (others.length) {
+      const keep = VP.sel.slice();
+      VP.sel = others;
+      if (c.crType === 'chamfer') VP.objops.corners('chamfer', c.crA, c.crLock ? c.crA : c.crB);
+      else VP.objops.corners(c.crType, c.crR);
+      VP.sel = keep;
+      others.forEach((it) => {
+        if (!it.parent) return;
+        it.data.cornerPrint = printOf(it);
+        it.data.cornerAt = firstPt(it);
+      });
+    } else if (rects.length) VP.commit();
+    if (rects.length) VP.toast(rects.length + ' dikdörtgenin köşeleri: ' + { fillet: 'yuvarlak', scallop: 'oyuk', chamfer: 'pah' }[c.crType] + ' ' + VP.num(R, 2) + ' mm');
+    UI.schedule('dock', 'prop');
   };
 
   /* ================= Align and Distribute ================= */
