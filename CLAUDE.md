@@ -40,3 +40,9 @@ Her ajan kendi bölümündeki her menüyü, alt menüyü, iletişim kutusunu ve 
 - Resimler: PowerTRACE'in resmi 900 px'e küçültmesi (tam çözünürlük), renk tablosu, ton eğrisi, resimde geçişli saydamlığın çalışmaması, yarım tonlu siyah-beyaz.
 - Damlalığın resimden piksel rengi alması; Nesneler panelinde sürükle-bırak ve yeniden adlandırma; kilitli nesnenin seçilebilmesi.
 - Arayüz: Pencere menüsünde tekrarlanan panel maddeleri, aynı anda birden çok palet, çalışma alanı kaydetme, paragraf metninde karakter düzeyi biçim.
+
+## Saga / CutArtist (vp-saga.js, araclar/cutartist-gonder.ps1)
+- Corel'deki Saga eklentisi (CutArtist klasöründe `plugin\Corel\CorelDRAW\SagaCdrStandard.cpg`) işi `C:\Users\Public\Documents\SagaCommonPlugin\ABDOPQR.pdf` + `ABDOPQR.plt` olarak yazar.
+- CutArtist kapalıysa `CutArtist.exe -f <pdf> <plt>` ile açılır; açıksa dosyalar `C:\Users\Public\Documents\CommonPlugin` klasöründen okunur ve `SAGA_FILE_UPDATE` (RegisterWindowMessage) HWND_BROADCAST ile, wParam=lParam=0 gönderilir.
+- PLT: 1/40 mm, `PS<sayfa boyu>,<sayfa eni>,<üst>,<sol>,4,<işaret çapı>;MD0,0,<boy-üst-alt>,<en-sol-sağ>,4;IN;PA;SP1;SP2;` + `PU x,y;PD ...;` + `PU;!PG;`. X sayfanın üstünden aşağı, Y soldan sağa; başlangıç sol üst işaretin merkezi (kenardan 10 mm). Ayarlar `C:\Users\Public\Documents\SagaCdrCam.ini`.
+- Masaüstündeki "VektörPad - CutArtist" kısayolu `araclar/cutartist-gonder.ps1` betiğini çalıştırır.
