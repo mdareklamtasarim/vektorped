@@ -658,7 +658,7 @@
   };
   const colorField = (label, name, hex) =>
     '<label class="field"><span>' + esc(label) + '</span><input type="color" data-pf="' + name + '" value="' + esc(hex || '#ffffff') + '" aria-label="' + esc(label) + '" style="width:34px;height:26px;border:0;padding:0;background:transparent"></label>';
-  const dirSeg = (cur) => '<span class="seg">' + [['outside', 'Dış'], ['inside', 'İç']].map(([v, l]) => '<button data-act="fxDir:' + v + '" class="' + (cur === v ? 'on' : '') + '" title="' + l + ' kontur">' + l + '</button>').join('') + '</span>';
+  const dirSeg = (cur) => '<span class="seg">' + [['outside', 'Dış'], ['inside', 'İç'], ['center', 'Merkeze']].map(([v, l]) => '<button data-act="fxDir:' + v + '" class="' + (cur === v ? 'on' : '') + '" title="' + l + ' kontur">' + l + '</button>').join('') + '</span>';
   const fxFields = (g) => {
     const fx = g.data.effect;
     const ext = VP.fx.ext(g);

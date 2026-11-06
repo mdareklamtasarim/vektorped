@@ -212,8 +212,17 @@
       const n2 = Pt(t2.y, -t2.x).normalize(d);
       const ang = n1.getDirectedAngle(n2);
       if (Math.abs(ang) > 10) {
-        const k = Math.ceil(Math.abs(ang) / 10);
-        for (let j = 1; j < k; j++) out.push(b.add(n1.rotate((ang * j) / k)));
+        const mode = FX._offMode || 'round';
+        const half = (Math.abs(ang) / 2) * (Math.PI / 180);
+        if (mode === 'miter' && Math.cos(half) > 0.25) {
+          // sharp corner: where the two offset edges meet
+          const m = n1.add(n2);
+          if (m.length > 1e-9) out.push(b.add(m.normalize(Math.abs(d) / Math.cos(half))));
+        } else if (mode === 'round' || mode === 'miter') {
+          const k = Math.ceil(Math.abs(ang) / 10);
+          for (let j = 1; j < k; j++) out.push(b.add(n1.rotate((ang * j) / k)));
+        }
+        // bevel: the two edges are simply joined by a straight cut
       }
     }
     return out;
@@ -275,8 +284,10 @@
     const fx = g.data.effect;
     const src = FX.contourSource(g);
     g.children.slice().forEach((c) => c !== src && c.remove());
-    const n = clamp(Math.round(fx.steps || 3), 1, 40);
-    const sign = fx.dir === 'inside' ? -1 : 1;
+    const toCenter = fx.dir === 'center';
+    const n = toCenter ? 60 : clamp(Math.round(fx.steps || 3), 1, 40);
+    const sign = fx.dir === 'inside' || toCenter ? -1 : 1;
+    FX._offMode = fx.corners || 'round';
     const end = fx.endFill ? new paper.Color(fx.endFill) : null;
     const made = [];
     for (let i = 1; i <= n; i++) {
@@ -286,8 +297,15 @@
       r.fillColor = end ? FX.lerpColor(src.fillColor, end, t) : src.fillColor ? solid(src.fillColor) : null;
       r.strokeColor = src.strokeColor;
       r.strokeWidth = src.strokeWidth;
-      r.strokeJoin = 'round';
+      r.strokeJoin = fx.corners === 'miter' ? 'miter' : fx.corners === 'bevel' ? 'bevel' : 'round';
       made.push(r);
+      // to centre: steps go on until the shape is used up
+      if (toCenter && (!r.area || Math.abs(r.area) < 1)) break;
+    }
+    FX._offMode = null;
+    if (toCenter && made.length) {
+      const total = made.length;
+      made.forEach((r, i) => (r.fillColor = end ? FX.lerpColor(src.fillColor, end, (i + 1) / total) : r.fillColor));
     }
     let prev = src;
     made.forEach((r) => {
@@ -305,7 +323,7 @@
     g.insertAbove(item);
     g.addChild(item);
     item.data.effectSrc = true;
-    g.data.effect = { type: 'contour', dir: VP.defaults.contourDir, steps: VP.defaults.contourSteps, offset: VP.toPT(VP.defaults.contourOffset), endFill: VP.defaults.contourEnd };
+    g.data.effect = { type: 'contour', dir: VP.defaults.contourDir, corners: VP.defaults.contourCorners || 'miter', steps: VP.defaults.contourSteps, offset: VP.toPT(VP.defaults.contourOffset), endFill: VP.defaults.contourEnd };
     FX.buildContour(g);
     if (!g.data.effect.made) VP.toast('Bu aralıkla kontur oluşmadı · Aralığı küçültün');
     else VP.toast('Kontur oluşturuldu');
