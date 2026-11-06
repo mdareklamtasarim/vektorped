@@ -280,7 +280,7 @@
   const stepOf = (input) => {
     const u = input.parentNode && input.parentNode.querySelector('.unit');
     const t = u ? u.textContent : '';
-    return t === 'mm' ? 0.1 : 1;
+    return t === 'mm' || t === 'cm' ? 0.1 : t === 'in' ? 0.01 : 1;
   };
   const addSpins = (pb) => {
     pb.querySelectorAll('.field input[data-pf][inputmode="decimal"]').forEach((inp) => {
@@ -303,7 +303,8 @@
     const st = stepOf(inp);
     const nv = (isFinite(v) ? v : 0) + st * +b.dataset.spin;
     inp.value = VP.num(Math.round(nv / st) * st, st < 1 ? 2 : 1);
-    UI.propField(inp.dataset.pf, inp.value, inp);
+    // through the normal change event, so unit conversion and every listener see it
+    inp.dispatchEvent(new Event('change', { bubbles: true }));
   }, true);
   const rpb0 = UI.renderPropbar;
   UI.renderPropbar = function () {
