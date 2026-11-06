@@ -16,7 +16,7 @@
     'cut', 'copy', 'paste', 'delete', 'duplicate', '|',
     'sub:Sırala|toFront,forward,backward,toBack,inFrontOf,behindOf,reverseOrder,toLayer,copyToLayer', '|',
     'hide', 'lock', '|',
-    'fxPowerclip', 'sub:PowerClip|fxPowerclip2,pcCenter,pcFit,pcFill', 'sub:Çerçeve türü|k7FrameEmpty,k7FramePlace,k7FrameNone', '|',
+    'fxPowerclip', 'sub:PowerClip|fxPowerclip2,pcEdit,pcFinish,pcExtract,pcLock,pcSelect,pcCenter,pcFit,pcFill,pcStretch', 'sub:Çerçeve türü|k7FrameEmpty,k7FramePlace,k7FrameNone', '|',
     'symNew', 'symEdit', 'symFinish', '|',
     'toSymbol', 'breakSymbol', '|',
     'sub:İnternet bağlantıları|k6Link', '|',
