@@ -17,7 +17,7 @@
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
   const newHist = () => ({ stack: [], i: -1, max: 80 });
   const norm = (doc) => ({
-    name: doc.name || 'Adsız',
+    name: doc.name || 'İsimsiz',
     active: clamp(doc.active || 0, 0, Math.max(0, (doc.pages || []).length - 1)),
     pages: (doc.pages && doc.pages.length ? doc.pages : [VP.newPage(1)]).map((p) => Object.assign({ layers: [], thumb: null }, p)),
     ext: doc.ext || {}
@@ -27,10 +27,10 @@
   D.nextName = () => {
     let n = 0;
     D.list.forEach((e) => {
-      const m = /^Adsız-(\d+)$/.exec(docOf(e).name || '');
+      const m = /^(?:Adsız|İsimsiz)-(\d+)$/.exec(docOf(e).name || '');
       if (m) n = Math.max(n, +m[1]);
     });
-    return 'Adsız-' + (n + 1);
+    return 'İsimsiz-' + (n + 1);
   };
 
   /* =============== autosave of every open document =============== */
@@ -109,7 +109,7 @@
   // an untouched new document is replaced instead of keeping an empty tab
   D.pristine = () => {
     const e = D.list[D.active];
-    return !!(e && !e.dirty && VP.hist.stack.length <= 1 && VP.userLayers().every((L) => !L.children.length) && /^Adsız/.test(VP.doc.name || ''));
+    return !!(e && !e.dirty && VP.hist.stack.length <= 1 && VP.userLayers().every((L) => !L.children.length) && /^(Adsız|İsimsiz)/.test(VP.doc.name || ''));
   };
   const askSave = (e) => new Promise((resolve) => {
     UI.modal(
@@ -137,7 +137,7 @@
     if (e.dirty && !(await askSave(e))) return;
     i = D.list.indexOf(e);
     if (D.list.length === 1) {
-      D.list[0] = { doc: VP.newDoc('Adsız-1'), hist: null, view: null, dirty: false };
+      D.list[0] = { doc: VP.newDoc('İsimsiz-1'), hist: null, view: null, dirty: false };
       D.active = -1;
       D.activate(0, true);
       if (VP.classic && VP.classic.on()) VP.classic.showWelcome(true);
@@ -159,7 +159,7 @@
       if (e.dirty && !(await askSave(e))) return;
       e.dirty = false;
     }
-    D.list = [{ doc: VP.newDoc('Adsız-1'), hist: null, view: null, dirty: false }];
+    D.list = [{ doc: VP.newDoc('İsimsiz-1'), hist: null, view: null, dirty: false }];
     D.active = -1;
     D.activate(0, true);
     if (VP.classic && VP.classic.on()) VP.classic.showWelcome(true);

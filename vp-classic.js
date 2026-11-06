@@ -358,7 +358,7 @@
     const t = document.createElement('div');
     t.className = 'doc-tab welcome-tab';
     t.setAttribute('role', 'tab');
-    t.innerHTML = ic('welcome', 'sm') + '<span>Hoş Geldiniz ekranı</span><button class="doc-close" aria-label="Hoş geldiniz ekranını kapat">×</button>';
+    t.innerHTML = ic('welcome', 'sm') + '<span>Karşılama Ekranı</span><button class="doc-close" aria-label="Karşılama ekranını kapat">×</button>';
     tabs.insertBefore(t, tabs.firstChild);
     t.addEventListener('click', (e) => {
       if (e.target.closest('.doc-close')) {
@@ -444,7 +444,7 @@
         VP.toast('Arayüz görünümü: ' + (CL.on() ? 'klasik masaüstü' : 'modern'));
       }
     },
-    welcomeScreen: { label: 'Hoş Geldiniz ekranı', icon: 'welcome', run: () => { const t = $('.welcome-tab'); if (t) t.hidden = false; CL.showWelcome(true); } },
+    welcomeScreen: { label: 'Karşılama Ekranı', icon: 'welcome', run: () => { const t = $('.welcome-tab'); if (t) t.hidden = false; CL.showWelcome(true); } },
     dockHints: { label: 'İpuçları', icon: 'hints', run: () => UI.openDock('hints') }
   });
   const M = UI.MENUS;

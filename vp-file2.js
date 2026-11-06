@@ -173,7 +173,7 @@
           try {
             const o = JSON.parse(t.json);
             const doc = o.doc;
-            doc.name = (D && D.nextName ? D.nextName() : 'Adsız') ;
+            doc.name = (D && D.nextName ? D.nextName() : 'İsimsiz') ;
             IO.loadDoc(doc);
             VP.toast('Şablondan yeni belge: ' + t.name);
           } catch (err) {

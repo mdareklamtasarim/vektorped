@@ -341,4 +341,55 @@
   build();
   // later modules may still push into these menus on load; put the Corel layout back afterwards
   addEventListener('load', () => setTimeout(build, 50));
+
+  /* ---------- document tabs as in Corel: sized to their names, "+" for a new document ---------- */
+  const K = 'html[data-cd][data-skin="classic"][data-skin]';
+  const css = document.createElement('style');
+  css.textContent =
+    K + ' .doc-tabs { align-items: center; gap: 4px; padding: 3px 4px; }' +
+    K + ' .doc-tabs > .doc-tab { max-width: none !important; min-width: 0 !important; height: 22px; border-radius: 3px; padding: 0 2px 0 10px; gap: 6px; flex: none; }' +
+    K + ' .doc-tabs > .doc-tab:not(.welcome-tab) > svg { display: none; }' +
+    K + ' .doc-tabs .doc-name { width: auto; min-width: 0; padding: 0 2px; border: 0; background: transparent; height: 20px; }' +
+    K + ' .doc-tabs .doc-close { width: 20px; height: 20px; font-size: 15px; }' +
+    K + ' .doc-tabs .doc-tab-name { max-width: 220px; font-size: 12px; }' +
+    '.doc-add { display: none; }' +
+    K + ' .doc-add { display: inline-flex; align-items: center; justify-content: center; flex: none; width: 22px; height: 22px; border: 0; border-radius: 3px; background: var(--cd-field); color: #d6d6d6; font-size: 17px; line-height: 1; cursor: pointer; }' +
+    K + ' .doc-add:hover { background: #4a4a4a; color: #fff; }' +
+    '@media (pointer: coarse) {' + K + ' .doc-tabs > .doc-tab, ' + K + ' .doc-add { height: 34px; } ' + K + ' .doc-add { width: 34px; } ' + K + ' .doc-tabs .doc-close { width: 30px; height: 30px; } }';
+  document.head.appendChild(css);
+  let meter = null;
+  const fitName = () => {
+    const dn = document.getElementById('doc-name');
+    if (!dn) return;
+    meter = meter || document.createElement('canvas').getContext('2d');
+    meter.font = getComputedStyle(dn).font;
+    dn.style.width = Math.ceil(meter.measureText(dn.value || ' ').width) + 6 + 'px';
+  };
+  const placeAdd = () => {
+    const bar = document.querySelector('.doc-tabs');
+    if (!bar) return;
+    let b = bar.querySelector('.doc-add');
+    if (!b) {
+      b = document.createElement('button');
+      b.className = 'doc-add';
+      b.title = 'Yeni belge';
+      b.setAttribute('aria-label', 'Yeni belge');
+      b.textContent = '+';
+      b.addEventListener('click', () => UI.run('new'));
+    }
+    bar.appendChild(b);
+    fitName();
+  };
+  if (VP.docs && VP.docs.render) {
+    const r0 = VP.docs.render;
+    VP.docs.render = function () {
+      const r = r0.apply(this, arguments);
+      placeAdd();
+      return r;
+    };
+  }
+  document.addEventListener('input', (e) => {
+    if (e.target && e.target.id === 'doc-name') fitName();
+  });
+  addEventListener('load', () => setTimeout(placeAdd, 60));
 })();

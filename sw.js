@@ -1,6 +1,6 @@
 /* VektörPad offline worker: keeps every file of the app on the iPad so it opens without internet.
    A new version of the package (a different VERSION) is downloaded in the background when online. */
-const VERSION = 'f764670c1412';
+const VERSION = '98f4db09ab40';
 const CACHE = 'vektorpad-' + VERSION;
 const FILES = [
  "./",
