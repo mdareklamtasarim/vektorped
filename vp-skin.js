@@ -149,6 +149,7 @@ html[data-cd][data-skin="classic"][data-skin] .sec-note { font-size: 11px; }
 html[data-cd][data-skin="classic"][data-skin] .pop-item { min-height: 21px; font-size: 12px; padding: 0 12px 0 8px; }
 html[data-cd][data-skin="classic"][data-skin] .pop-sep { margin: 2px 4px; }
 html[data-cd][data-skin="classic"][data-skin] .pop-item svg.i.sm { width: 14px; height: 14px; }
+html[data-cd][data-skin="classic"][data-skin] .popover .pop-item > span:first-child { margin-left: calc(14px + var(--pop-gap, 10px)); }
 html[data-cd][data-skin="classic"][data-skin] .layer-row, html[data-cd][data-skin="classic"][data-skin] .obj-row { min-height: 24px; }
 html[data-cd][data-skin="classic"][data-skin] .row-btn { width: 22px; height: 22px; }
 @media (pointer: coarse) {
