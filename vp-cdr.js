@@ -184,13 +184,16 @@
         i += len - 1;
       } catch (e) { /* not a style block */ }
     }
-    let E = L;
-    while (E > 0 && d[E - 1] === 0 && L - E < 16) E--;
+    // Keep zero high bytes in UTF-16 characters. The stored length tells us
+    // where the string ends even when optional zero padding follows it.
+    let minEnd = L;
+    while (minEnd > 0 && d[minEnd - 1] === 0 && L - minEnd < 16) minEnd--;
     let chars = null;
-    for (let n = 1; n < Math.min(E - 4, 200000) && !chars; n++) {
-      const p = E - n - 4;
-      if (p < 0) break;
-      if (dv.getUint32(p, true) !== n) continue;
+    let fallback = null;
+    for (let p = L - 5; p >= Math.max(0, minEnd - 4 - 200000) && !chars; p--) {
+      const n = dv.getUint32(p, true);
+      const end = p + 4 + n;
+      if (!n || n > 200000 || end < minEnd || end > L) continue;
       // per-character records
       for (let c = Math.ceil(n / 2); c <= n; c++) {
         const q = p - 8 * c - 4;
@@ -210,20 +213,16 @@
         chars = out;
         break;
       }
-      if (!chars) {
-        const s = dec.decode(d.subarray(p + 4, p + 4 + n));
-        // an empty text box ends with a style block, not with characters
-        let isStyle = false;
-        if (/^\s*\{/.test(s)) {
-          try {
-            JSON.parse(s);
-            isStyle = true;
-          } catch (e) { /* real text */ }
+      if (!chars && fallback === null && end === minEnd) {
+        const raw = dec.decode(d.subarray(p + 4, end));
+        let styleOnly = false;
+        if (/^\s*\{/.test(raw)) {
+          try { JSON.parse(raw); styleOnly = true; } catch (e) { /* text */ }
         }
-        chars = isStyle ? [] : [...s].map((c) => ({ c, s: 0 }));
-        break;
+        fallback = styleOnly ? [] : [...raw].map((c) => ({ c, s: 0 }));
       }
     }
+    chars = chars || fallback;
     chars = (chars || []).filter((x) => x.c !== '\0');
     return { chars, blocks, text: chars.map((x) => x.c).join(''), style: blocks[0] || null };
   };
@@ -268,7 +267,7 @@
       data += 1024;
     }
     if (data + stride * (h - 1) + Math.ceil((w * bpp) / 8) > rec.length) return null;
-    return { w, h, bpp, stride, data, pal };
+    return { w, h, bpp, stride, data, pal, colorModel: dv.getUint32(at + 14, true) };
   };
   CDR.bitmapSize = (rec) => {
     for (let i = 8; i < Math.min(rec.length - 2, 400); i++) {
@@ -303,7 +302,13 @@
         const mrow = mask && mask.w === img.w && mask.h === img.h ? mask.data + (img.h - 1 - y) * mask.stride : -1;
         for (let x = 0; x < img.w; x++) {
           const o = (y * img.w + x) * 4;
-          if (img.bpp === 24 || img.bpp === 32) {
+          if (img.bpp === 32 && img.colorModel === 3) {
+            const s = row + x * 4;
+            const light = 1 - rec[s + 3] / 255;
+            px[o] = (255 - rec[s]) * light;
+            px[o + 1] = (255 - rec[s + 1]) * light;
+            px[o + 2] = (255 - rec[s + 2]) * light;
+          } else if (img.bpp === 24 || img.bpp === 32) {
             const s = row + x * (img.bpp >> 3);
             px[o] = rec[s + 2];
             px[o + 1] = rec[s + 1];
@@ -446,8 +451,14 @@
     let root = null;
     let files = null;
     const previews = {};
+    let expected = null;
     if (u8[0] === 0x50 && u8[1] === 0x4b) {
       const z = CDR.unzip(buf);
+      const metadata = await z.get('META-INF/metadata.xml');
+      if (metadata) {
+        const match = /<(?:[\w.-]+:)?Total>\s*(\d+)\s*<\//.exec(new TextDecoder().decode(metadata));
+        if (match) expected = Number(match[1]);
+      }
       if (z.names.includes('content/root.dat')) {
         root = await z.get('content/root.dat');
         const list = new TextDecoder().decode((await z.get('content/dataFileList.dat')) || new Uint8Array()).split(/\r?\n/).filter(Boolean);
@@ -462,7 +473,7 @@
     // CDR documents and CDT templates
     if (!root || fourcc(root, 0) !== 'RIFF' || !/^CD[RT]/.test(fourcc(root, 8))) throw new Error('format');
     const tree = CDR.tree(root, files);
-    return { tree, previews, letter: fourcc(root, 8)[3] };
+    return { tree, previews, expected, letter: fourcc(root, 8)[3] };
   };
   CDR.toDoc = (R, name) => {
     const tree = R.tree;
@@ -657,7 +668,7 @@
         else lines[lines.length - 1].push(x);
       });
       const fr = a.args[30];
-      const fw = a.type === 6 && fr && fr.length >= 12 ? dvOf(fr).getInt32(4, true) * UNIT * (m ? Math.hypot(m.a, m.b) : 1) : 0;
+      const fw = a.type === 6 && fr && fr.length >= 12 ? dvOf(fr).getInt32(4, true) * UNIT * sc : 0;
       // paragraph text wraps at spaces to the frame width
       if (fw > 0) {
         const out = [];
@@ -738,8 +749,11 @@
         });
       } else out = items.length === 1 ? items[0] : new paper.Group({ children: items, insert: false });
       if (m) {
-        const ang = (Math.atan2(m.b, m.a) * 180) / Math.PI;
-        if (Math.abs(ang) > 0.05) out.rotate(-ang, O);
+        // Layout already includes uniform font scaling. Apply the remaining
+        // affine map around the baseline, converting Corel's upward Y to page Y.
+        const linear = new paper.Matrix(m.a / sc, -m.b / sc, -m.c / sc, m.d / sc, 0, 0);
+        const placement = new paper.Matrix().translate(O).append(linear).translate(O.negate());
+        out.transform(placement);
       }
       return out;
     };
@@ -822,8 +836,10 @@
       const pc = a.args[8005];
       if (pc && pc.length >= 8 && st.depth < 8) {
         const dv = dvOf(pc);
-        const refs = [dv.getUint32(4, true)];
-        if (pc.length >= 16) refs.push(dv.getUint32(12, true));
+        // The first word identifies the clip group (its spnd record).
+        const clipId = dv.getUint32(0, true);
+        const refs = st.clips[clipId] ? [clipId] : [dv.getUint32(4, true)];
+        if (!st.clips[clipId] && pc.length >= 16) refs.push(dv.getUint32(12, true));
         const kids = [];
         st.depth++;
         refs.filter((r, i, all) => st.clips[r] && all.indexOf(r) === i).forEach((r) => buildChildren({ items: [st.clips[r]] }, kids));
@@ -859,7 +875,7 @@
         if (x.list === 'obj') {
           const it = buildObj(x);
           if (it) into.push(it);
-        } else if (x.list === 'grp') {
+        } else if (x.list === 'grp' || x.list === 'lnkg') {
           const kids = [];
           buildChildren(x, kids);
           // tables (object type 38): the table and each of its cells is a group with its own frame
@@ -909,17 +925,17 @@
       }
       return out;
     };
-    const SPECIAL = /^(guides|desktop|grid|document grid|kılavuz.*|masaüstü|ızgara|belge ızgarası)$/i;
+    const SPECIAL = /^(guides|grid|document grid|kılavuz.*|ızgara|belge ızgarası)$/i;
     const pages = tree.items.filter((x) => x.list === 'page');
     const layersOf = (page) => {
-      const gobj = page.items.find((x) => x.list === 'gobj');
+      const entries = page.items.flatMap((x) => x.list === 'gobj' ? x.items : [x]);
       const out = [];
-      (gobj ? gobj.items : []).filter((x) => x.list === 'layr').reverse().forEach((layr) => {
+      entries.filter((x) => x.list === 'layr').reverse().forEach((layr) => {
         const name = layerName(layr);
         if (SPECIAL.test(name)) return;
         const items = [];
         buildChildren(layr, items);
-        if (!name && !items.length) return;
+        if (!items.length && (!name || /^(desktop|masaüstü)$/i.test(name))) return;
         out.push({ name: name || 'Katman ' + (out.length + 1), items });
       });
       return out;
@@ -987,12 +1003,60 @@
 
   CDR.open = async (file) => {
     VP.toast('CorelDRAW dosyası açılıyor…');
+    let R = null;
+    let res = null;
+    let nativeReadFailed = false;
+
     try {
-      const R = await CDR.read(await file.arrayBuffer());
+      R = await CDR.read(await file.arrayBuffer());
       const name = (file.name || 'Corel belgesi').replace(/\.(cdr|cdt|cdrt)$/i, '');
-      const res = CDR.toDoc(R, name);
+      res = CDR.toDoc(R, name);
+    } catch (e) {
+      console.warn('Standart CDR okuyucu ayrıştırma hatası:', e);
+      nativeReadFailed = true;
+    }
+
+    // Determine if the standard import was incomplete, mixed-up, or failed
+    const skippedKeys = (res && res.stats && res.stats.skipped) ? Object.keys(res.stats.skipped) : [];
+    const skippedCount = skippedKeys.reduce((acc, k) => acc + (res.stats.skipped[k] || 0), 0);
+    const shapeCount = res && res.stats ? (res.stats.shapes + (res.stats.texts || 0) + (res.stats.images || 0)) : 0;
+    const expectedCount = R && R.expected != null ? R.expected : null;
+
+    const needsHighFidelity = nativeReadFailed ||
+      !res ||
+      !res.doc ||
+      shapeCount === 0 ||
+      skippedCount > 0 ||
+      (expectedCount != null && shapeCount < expectedCount * 0.7);
+
+    // If advanced WebAssembly engine is available and file needs high fidelity
+    if (needsHighFidelity && typeof CDR.importWithEngine === 'function') {
+      try {
+        let previewBase64 = null;
+        if (R && R.previews && R.previews[1]) {
+          previewBase64 = b64(R.previews[1]);
+        }
+        const engineRes = await CDR.importWithEngine(file, { previewBase64 });
+        if (engineRes && engineRes.doc) {
+          // Adjust zoom/center to fit art
+          setTimeout(() => {
+            const bb = CDR.artBounds();
+            if (bb && !VP.pageRect().intersects(bb)) {
+              paper.view.center = bb.center;
+              paper.view.zoom = Math.min(paper.view.viewSize.width / bb.width, paper.view.viewSize.height / bb.height) * 0.9;
+              VP.viewChanged();
+            }
+          }, 60);
+          return engineRes;
+        }
+      } catch (err) {
+        console.warn('libcdr motoru ile açılış başarısız, standart içe aktarma değerlendiriliyor:', err);
+      }
+    }
+
+    // Fallback to standard doc if successfully parsed
+    if (res && res.doc) {
       IO.loadDoc(res.doc);
-      // a drawing left on the desktop beside the page: show it instead of an empty page
       setTimeout(() => {
         const bb = CDR.artBounds();
         if (bb && !VP.pageRect().intersects(bb)) {
@@ -1002,14 +1066,21 @@
           setTimeout(() => VP.toast('Çizim Corel’de de sayfanın dışında (masaüstünde) duruyor · Mizanpaj › Sayfayı çizime uydur ile sayfaya alabilirsiniz'), 2600);
         }
       }, 60);
+
       const sk = Object.entries(res.stats.skipped).map(([k, n]) => n + ' ' + k).join(', ');
       VP.toast(CDR.versionName(res.ver) + ' dosyası açıldı · ' + res.stats.shapes + ' nesne' + (res.stats.texts ? ' · ' + res.stats.texts + ' metin' : '') + (sk ? ' · Okunamayan: ' + sk + (res.previews ? ' (Corel önizleme katmanında görünür)' : '') : ''));
+
+      const notes = [];
+      if (sk) notes.push('Okunamayan öğeler: ' + sk + '.');
+      if (expectedCount != null && shapeCount < expectedCount) notes.push('CorelDRAW dosyada ' + expectedCount + ' nesne bildiriyor. VektörPad ' + shapeCount + ' nesne saydı.');
+      if (notes.length && CDR.offerRecovery) CDR.offerRecovery(file, notes.join(' '));
       return res;
-    } catch (e) {
-      console.error(e);
-      VP.toast(e && e.message === 'nozip' ? 'Bu tarayıcı sıkıştırılmış CDR dosyalarını açamıyor · Safari’yi güncelleyin' : 'CDR dosyası okunamadı · Corel’de PDF olarak kaydedip içe aktarmayı deneyin');
-      return null;
     }
+
+    // Both methods failed
+    if (CDR.offerRecovery) CDR.offerRecovery(file, 'VektörPad bu dosyayı okuyamadı.');
+    VP.toast('CDR dosyası okunamadı · Corel’de PDF olarak kaydedip içe aktarmayı deneyin');
+    return null;
   };
   // bounds of everything drawn on the page (not the Corel preview)
   CDR.artBounds = () => VP.userLayers().filter((l) => !l.data.cdrPreview && l.visible).reduce((a, l) => {

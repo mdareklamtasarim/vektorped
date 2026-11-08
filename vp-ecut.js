@@ -37,19 +37,55 @@
   EC.S = S;
 
   /* =============== helper layers =============== */
-  const LAYERS = { cut: 'Bıçak izi', marks: 'Hizalama işaretleri' };
-  EC.findLayer = (kind) => VP.userLayers().find((l) => l.data && l.data.ecut === kind) || null;
+  const LAYERS = { cut: 'CUT', crease: 'CREASE', halfcut: 'HALFCUT', marks: 'MARKS' };
+  const LAYER_TITLES = { cut: 'CUT (Bıçak izi)', crease: 'CREASE (Pilyaj/Kırım)', halfcut: 'HALFCUT (Yarım kesim)', marks: 'MARKS (Hizalama krosları)' };
+  const EC_COLORS = { cut: CUT, crease: '#0066ff', halfcut: '#00aa00', marks: REG };
+  EC.findLayer = (kind) => VP.userLayers().find((l) => (l.data && l.data.ecut === kind) || (l.name && (l.name.toUpperCase() === (LAYERS[kind] || kind).toUpperCase() || l.name.toUpperCase().startsWith((LAYERS[kind] || kind).toUpperCase() + ' ') || (kind === 'cut' && /bıçak|kesim/i.test(l.name)) || (kind === 'crease' && /pilyaj|kırım/i.test(l.name)) || (kind === 'marks' && /kros|hizalama/i.test(l.name))))) || null;
   EC.layer = (kind) => {
     let L = EC.findLayer(kind);
     if (L) return L;
     const keep = VP.activeLayer;
-    L = new paper.Layer({ name: LAYERS[kind], insert: false });
+    L = new paper.Layer({ name: LAYERS[kind] || kind, insert: false });
     L.data.ecut = kind;
     paper.project.addLayer(L);
     VP.keepSysOrder();
     if (keep && paper.project.layers.includes(keep)) keep.activate();
     VP.emit('layers');
     return L;
+  };
+  EC.assignLayer = (kind) => {
+    const items = VP.sel.slice();
+    if (!items.length) return VP.toast('Önce ' + (LAYER_TITLES[kind] || kind) + ' katmanına atanacak nesneleri seçin');
+    const L = EC.layer(kind);
+    const col = EC_COLORS[kind] || CUT;
+    const styler = (it) => {
+      if (it instanceof paper.Path || it instanceof paper.CompoundPath) {
+        it.fillColor = null;
+        it.strokeColor = new paper.Color(col);
+        it.strokeWidth = 0.5;
+        if (kind === 'crease') it.dashArray = [6, 3];
+        else it.dashArray = [];
+      } else if (it.children) {
+        it.children.forEach(styler);
+      }
+    };
+    items.forEach((it) => {
+      L.addChild(it);
+      styler(it);
+      it.data = it.data || {};
+      it.data.ecKind = kind;
+    });
+    VP.setSelection(items);
+    VP.commit();
+    VP.toast(items.length + ' nesne ' + (LAYER_TITLES[kind] || kind) + ' katmanına atandı');
+  };
+  EC.cutArtistMarks = () => {
+    const s = S();
+    s.markKind = 'circle';
+    s.markSize = 5;
+    s.markCount = 4;
+    s.markOff = 5;
+    return EC.marks();
   };
   const inEc = (it) => !!(it && it.layer && it.layer.data && it.layer.data.ecut);
   const work = () => VP.sel.filter((it) => !inEc(it));
@@ -630,19 +666,52 @@
       VP.toast('Kesim dosyası oluşturulamadı');
     }
   };
-  // print file: everything except the cut lines (marks stay, the plotter's camera reads them)
+  // CutArtist DXF export with strict layer names: CUT, CREASE, HALFCUT, MARKS
+  EC.exportCutArtist = async () => {
+    const cutKinds = ['cut', 'crease', 'halfcut', 'marks'];
+    const activeLayers = VP.userLayers().filter((l) => cutKinds.includes((l.data && l.data.ecut) || (l.name && l.name.toLowerCase())) || /cut|crease|halfcut|marks|bıçak|kesim|pilyaj|kırım/i.test(l.name));
+    if (!activeLayers.length || !activeLayers.some((l) => l.children && l.children.length)) {
+      return VP.toast('Sayfada CutArtist katmanı (CUT / CREASE / MARKS) bulunamadı · Önce bıçak veya kros ekleyin');
+    }
+    VP.storePage();
+    const io = VP.io;
+    const i = VP.doc.active;
+    const layersJSON = activeLayers.map((l) => {
+      const c = l.clone({ insert: false });
+      c.visible = true;
+      const kind = (l.data && l.data.ecut) || '';
+      if (kind === 'cut' || /bıçak|kesim/i.test(l.name)) c.name = 'CUT';
+      else if (kind === 'crease' || /pilyaj|kırım/i.test(l.name)) c.name = 'CREASE';
+      else if (kind === 'halfcut' || /yarım/i.test(l.name)) c.name = 'HALFCUT';
+      else if (kind === 'marks' || /kros|hizalama/i.test(l.name)) c.name = 'MARKS';
+      else c.name = 'CUT';
+      return c.exportJSON({ asString: true });
+    });
+    const opts = { curves: true, layersJSON, box: VP.pageRect() };
+    const name = io.safeName() + '-CutArtist';
+    try {
+      const s = io.buildSVG(i, Object.assign({ noSVG: true, onProject: (proj, box) => VP.files.dxf(proj, box) }, opts));
+      await io.saveFile(name + '.dxf', new Blob([s], { type: 'application/dxf' }));
+      VP.toast('CutArtist DXF dosyası başarıyla dışa aktarıldı');
+    } catch (e) {
+      console.error(e);
+      VP.toast('CutArtist dosyası oluşturulamadı');
+    }
+  };
+
+  // print file: everything except cut/crease lines (marks stay, the plotter's camera reads them)
   EC.exportPrint = async () => {
-    const L = EC.findLayer('cut');
+    const hideKinds = ['cut', 'crease', 'halfcut'];
+    const toHide = VP.userLayers().filter((l) => hideKinds.includes(l.data && l.data.ecut) || (l.name && /cut|crease|halfcut|bıçak|kesim|pilyaj|kırım/i.test(l.name)));
     if (!VP.files || !VP.files.pdf) return VP.toast('PDF dışa aktarma kullanılamıyor');
-    if (!L) return VP.files.pdf({ area: 'page', range: 'one', curves: false, bleed: 0, marks: false, nup: '1', sheet: 'A4', title: '', author: '', subject: '', keywords: '', userPass: '', ownerPass: '' });
-    const at = paper.project.layers.indexOf(L);
     const sel = VP.sel;
-    L.remove();
+    const saved = toHide.map((l) => ({ l, at: paper.project.layers.indexOf(l) }));
+    saved.forEach(({ l }) => l.remove());
     try {
       VP.storePage();
       await VP.files.pdf({ area: 'page', range: 'one', curves: false, bleed: 0, marks: false, nup: '1', sheet: 'A4', title: '', author: '', subject: '', keywords: '', userPass: '', ownerPass: '' });
     } finally {
-      paper.project.insertLayer(at, L);
+      saved.reverse().forEach(({ l, at }) => paper.project.insertLayer(at, l));
       VP.keepSysOrder();
       VP.storePage();
       VP.setSelection(sel);
@@ -697,6 +766,12 @@
       '<div class="row">' + go('ecExport:svg', 'export', 'Kesim SVG') + go('ecExport:dxf', '', 'Kesim DXF') + go('ecExport:eps', '', 'Kesim EPS') + '</div>' +
       '<div class="row">' + go('ecPrint', 'print', 'Baskı PDF (bıçak izi hariç)') + '</div>',
       'Kesim dosyasını plotter programınızda açın; baskı dosyasını matbaaya/yazıcıya gönderin.');
+    h += sec('CutArtist / SAGA Dijital Kesim (Bıçak & Pilyaj)',
+      '<p class="sec-note">SAGA / CutArtist çift kafalı (Bıçak + Kırım tekerleği) tablalar için katman ve kros standardı</p>' +
+      '<div class="row">' + go('ecAssignCut', 'ecCut', 'Seçimi CUT (Bıçak) yap') + go('ecAssignCrease', '', 'Seçimi CREASE (Pilyaj) yap') + '</div>' +
+      '<div class="row">' + go('ecAssignHalf', '', 'Seçimi HALFCUT (Yarım) yap') + go('ecCaMarks', 'ecMarks', 'CutArtist Krosları (5mm)') + '</div>' +
+      '<div class="row">' + go('ecExportCa', 'export', 'CutArtist DXF İndir', true) + '</div>',
+      'Kutu veya etiket şablonunda katlama çizgilerini CREASE, dış kesimleri CUT yapıp tek tıkla CutArtist DXF olarak indirin.');
     return h;
   };
   UI.panels = UI.panels || {};
@@ -763,6 +838,11 @@
     ecClearMarks: { label: 'Hizalama işaretlerini sil', run: () => EC.clearLayer('marks') },
     ecExport: { label: 'Kesim dosyası (SVG)', run: (fmt) => EC.exportCut(typeof fmt === 'string' ? fmt : 'svg') },
     ecExportDxf: { label: 'Kesim dosyası (DXF)', run: () => EC.exportCut('dxf') },
+    ecAssignCut: { label: 'Seçimi CUT (Bıçak) katmanına ata', icon: 'ecCut', run: () => EC.assignLayer('cut'), enabled: hasWork },
+    ecAssignCrease: { label: 'Seçimi CREASE (Pilyaj) katmanına ata', run: () => EC.assignLayer('crease'), enabled: hasWork },
+    ecAssignHalf: { label: 'Seçimi HALFCUT (Yarım) katmanına ata', run: () => EC.assignLayer('halfcut'), enabled: hasWork },
+    ecCaMarks: { label: 'CutArtist CCD Krosları ekle', icon: 'ecMarks', run: () => EC.cutArtistMarks() },
+    ecExportCa: { label: 'CutArtist DXF dosyası indir', icon: 'export', run: () => EC.exportCutArtist() },
     ecPrint: { label: 'Baskı dosyası (PDF, bıçak izi hariç)', icon: 'print', run: () => EC.exportPrint() },
     ecInfo: {
       label: 'Kesim uzunluğu', run: () => {
@@ -779,7 +859,7 @@
     if (m && A[m[1]]) return A[m[1]].run(m[2]);
     return run0(id, ...rest);
   };
-  UI.MENUS.plugins = ['h:Kesim ve Montaj', 'ecPanel', '|', 'ecCut', 'ecSelCut', 'ecHideCut', 'ecClearCut', '|', 'ecMarks', 'ecCrop', 'ecClearMarks', '|', 'ecImpose', 'ecNest', 'ecWeed', 'ecBleed', '|', 'ecInfo', 'ecExport', 'ecExportDxf', 'ecPrint'];
+  UI.MENUS.plugins = ['h:Kesim ve Montaj', 'ecPanel', '|', 'ecCut', 'ecSelCut', 'ecHideCut', 'ecClearCut', '|', 'ecMarks', 'ecCrop', 'ecClearMarks', '|', 'ecImpose', 'ecNest', 'ecWeed', 'ecBleed', '|', 'h:CutArtist / SAGA', 'ecAssignCut', 'ecAssignCrease', 'ecAssignHalf', 'ecCaMarks', 'ecExportCa', '|', 'ecInfo', 'ecExport', 'ecExportDxf', 'ecPrint'];
   UI.MENU_NAMES.plugins = 'Eklentiler';
   // keep Help last in the "all menus" list
   if (UI.MENUS.help) {

@@ -92,15 +92,7 @@
   const rk0 = VP.rotKnob;
   VP.rotKnob = (b) => (CL.on() ? Pt(1e9, 1e9) : rk0(b));
   const sel0 = VP.drawSelectionOverlay;
-  // handles in black on a light desk (as in the desktop program), light on a dark desk
-  const ink = () => {
-    let light = root.dataset.theme !== 'dark';
-    try {
-      const c = new paper.Color(getComputedStyle(root).getPropertyValue('--paste').trim() || (light ? '#ffffff' : '#000000'));
-      light = c.gray > 0.5;
-    } catch (e) { /* keep theme guess */ }
-    return new paper.Color(light ? '#000000' : '#f0f0f0');
-  };
+  const ink = () => new paper.Color(VP.colors.fg && /^#[0-9a-f]{3,6}$/i.test(VP.colors.fg) && root.dataset.theme === 'dark' ? '#f0f0f0' : '#000000');
   const arrowHead = (tip, dir, s) => {
     const n = Pt(-dir.y, dir.x);
     const k = VP.coarse ? 1.4 : 1;
@@ -279,6 +271,8 @@
   VP.on('selection', () => UI.dockTab === 'hints' && UI.renderDock(true));
 
   /* =============== welcome screen =============== */
+  // the tab shows a house, as in the desktop suite (drawn here)
+  const HOME_SVG = '<svg class="i sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 11.5L12 4l8.5 7.5"/><path d="M6 9.6V20h4.5v-5.5h3V20H18V9.6"/></svg>';
   let wl = null;
   const wlState = { tab: 'start' };
   const recentCard = () => {
@@ -300,19 +294,7 @@
       const items = (A.whatsNew && document.createElement('div')) || null;
       void items;
       return '<h2>Yenilikler</h2><p class="sec-note">Ayrıntılı liste: Yardım › Yenilikler</p><dl>' +
-        [['Sürüm 31', 'İçi boş nesneler içinden tıklanarak seçilir; seçim tutamaçları ve döndürme/eğme işaretleri masaüstü programın renk ve biçiminde'], ['Sürüm 30', 'Seçim aracı masaüstü programdaki gibi: Ctrl+tık grup içi, Alt+tık alttaki, sürüklerken kopya bırakma, sağ tuşla sürükleyip bırakma menüsü'], ['Sürüm 29', 'Odağa getir, çerçeve türü (boş PowerClip çerçevesi), bağlayıcı çizgiyi sarma, nesne ipucu, masaüstü katmanı, paragrafta harf aralığı'], ['Sürüm 28', 'Corel düzeninde paneller: Köşeler, Hizala ve Dağıt, Dönüştür sekmeleri, yeni Metin ve Nesneler panelleri; uzun CMYK paleti, kaydırma çubukları, gezgin'], ['Sürüm 27', 'CorelDRAW benzeri koyu görünüm, seçilebilir paneller, dikdörtgende köşe türleri ve dört ayrı köşe, üst üste dizilmiş özellik çubuğu'], ['Sürüm 26', 'Yazı tipi yöneticisi: dosyadan yazı tipi yükleme, Google Fonts’tan ekleme'],
-          ['Sürüm 25', 'Kısayol ve araç çubuğu özelleştirme, renk ayarları, Renk paneli, Varlıklar paneli'],
-          ['Sürüm 24', '31 yeni biteşlem efekti (3B, sanatsal darbeler, mercek parlaması, vitray, hava…), JPEG temizleme, RGB/Lab/CMYK modları'],
-          ['Sürüm 23', 'OpenType yazı ayarları ve değişken yazı tipleri, metni düzleştir, basılmayan karakterler, bindirme baskı, nesne verileri, bağlantılar ve yer imleri, bağlantı noktası aracı'],
-          ['Sürüm 22', 'Son kaydedilene dön, şablonlar, son kullanılanlar, birleştirerek yazdır, kılavuzlar paneli ve açılı kılavuzlar, taban çizgisi ızgarası, sayfa numarası biçimleri, serbest dönüştürme'],
-          ['Sürüm 21', 'Tahribatsız efektler, bağlı metin çerçeveleri, anahattı nesneye dönüştür, geri alma ve şekillendirme panelleri, efekt kopyala/klonla, özel yapıştır'],
-          ['Sürüm 20', 'Dışa aktarma paneli (çoklu dışa aktarma, ZIP), renk provası ve gamut uyarısı'],
-          ['Sürüm 19', 'Görüntü ayarlama laboratuvarı, renk uyumları, Noktalayıcı, Fotoğraf kolajı'],
-          ['Sürüm 18', 'Perspektif çizim (1-2-3 nokta), Etki aracı, nesneleri yola sığdırma, paragraf metnini nesne etrafında akıtma'],
-          ['Sürüm 17', 'Görünüm modları (tel kafes, taslak, piksel), çoklu sayfa görünümü, Koordinatlar paneli, çizim ölçeği'],
-          ['Sürüm 16', 'Hizalama kılavuzları, simetri, eğim efekti, QR kod ve barkod'],
-          ['Sürüm 15', 'Sağ tık menüsü (basılı tutarak)'],
-          ['Sürüm 14', 'CorelDRAW dosyalarını açma (.cdr), sürüm seçerek CorelDRAW için kaydetme'],
+        [['Sürüm 14', 'CorelDRAW dosyalarını açma (.cdr), sürüm seçerek CorelDRAW için kaydetme'],
           ['Sürüm 13', 'Kesim ve Montaj eklentisi: bıçak izi, hizalama işaretleri, çoğaltma, yerleştirme, ayıklama'],
           ['Sürüm 12', 'Yeni Belge Oluştur penceresi, her belge kendi sekmesinde, klasik masaüstü görünümü, Metin paneli'],
           ['Sürüm 11','Dışa aktarma (EPS, DXF, JPG, WEBP), PDF güvenliği, yazdırma, kitapçık, PDF/AI/DXF içe aktarma, betikler ve makrolar'],
@@ -328,7 +310,7 @@
   };
   const render = () => {
     if (!wl) return;
-    wl.innerHTML = '<nav><div class="wl-brand">' + ($('.brand svg') ? $('.brand').innerHTML : '') + 'VektörPad <small style="font:600 12px var(--font-ui);color:var(--muted)">sürüm 31</small></div>' +
+    wl.innerHTML = '<nav><div class="wl-brand">' + ($('.brand svg') ? $('.brand').innerHTML : '') + 'VektörPad</div>' +
       [['start', 'Başlarken'], ['new', 'Yenilikler'], ['learn', 'Öğrenme'], ['ws', 'Çalışma alanı']].map(([k, l]) => '<button data-wtab="' + k + '" class="' + (wlState.tab === k ? 'on' : '') + '">' + l + '</button>').join('') +
       '<label><input type="checkbox" data-wl="startup"' + (VP.settings.welcome !== false ? ' checked' : '') + '>Başlangıçta göster</label></nav><div class="wl-main">' + content() + '</div>';
   };
@@ -358,7 +340,7 @@
     const t = document.createElement('div');
     t.className = 'doc-tab welcome-tab';
     t.setAttribute('role', 'tab');
-    t.innerHTML = ic('welcome', 'sm') + '<span>Karşılama Ekranı</span><button class="doc-close" aria-label="Karşılama ekranını kapat">×</button>';
+    t.innerHTML = HOME_SVG + '<span>Karşılama Ekranı</span><button class="doc-close" aria-label="Karşılama Ekranını kapat">×</button>';
     tabs.insertBefore(t, tabs.firstChild);
     t.addEventListener('click', (e) => {
       if (e.target.closest('.doc-close')) {

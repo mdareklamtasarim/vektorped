@@ -35,12 +35,12 @@
     if (t instanceof paper.PointText) {
       const f = VP.getFill(t);
       const s = VP.getStroke(t);
-      return { kind: 'artistic', item: t, family: t.fontFamily, size: t.fontSize, bold: VP.isBold(t), italic: VP.isItalic(t), align: t.justification, fill: f.type === 'none' ? null : f.color, stroke: s.on ? s.color : null, strokeW: s.width, lead: t.leading && t.fontSize ? t.leading / t.fontSize : 1.2 };
+      return { kind: 'artistic', item: t, family: t.fontFamily, size: t.fontSize, bold: VP.isBold(t), italic: VP.isItalic(t), under: !!(t.data && t.data.underline), align: t.justification, fill: f.type === 'none' ? null : f.color, stroke: s.on ? s.color : null, strokeW: s.width, lead: t.leading && t.fontSize ? t.leading / t.fontSize : 1.2 };
     }
     const fx = FX.of(t);
     const f = VP.getFill(t);
     const s = VP.getStroke(t);
-    return { kind: fx.type, item: t, fx, family: fx.font.family, size: fx.font.size, bold: !!fx.font.bold, italic: !!fx.font.italic, align: fx.align, fill: fx.type === 'table' ? fx.color : f.type === 'none' ? null : f.color, stroke: s.on ? s.color : null, strokeW: s.width, lead: fx.lead || 1.2 };
+    return { kind: fx.type, item: t, fx, family: fx.font.family, size: fx.font.size, bold: !!fx.font.bold, italic: !!fx.font.italic, under: !!(fx.underline || (fx.font && fx.font.underline)), align: fx.align, fill: fx.type === 'table' ? fx.color : f.type === 'none' ? null : f.color, stroke: s.on ? s.color : null, strokeW: s.width, lead: fx.lead || 1.2 };
   };
   const loadFace = (family, bold, italic, then) => {
     if (!document.fonts) return;
@@ -114,7 +114,7 @@
 
   /* =============== docker =============== */
   const STYLES = [['n', 'Normal'], ['b', 'Kalın'], ['i', 'İtalik'], ['bi', 'Kalın İtalik']];
-  const ALIGNS = [['left', 'alignL', 'Sola'], ['center', 'alignCH', 'Ortaya'], ['right', 'alignR', 'Sağa'], ['justify', 'alignJ', 'İki yana']];
+  const ALIGNS = [['left', 'alignL', 'Sola hizala (Ctrl+L)'], ['center', 'alignCH', 'Ortaya hizala (Ctrl+E)'], ['right', 'alignR', 'Sağa hizala (Ctrl+R)'], ['justify', 'alignJ', 'Tam yasla (Ctrl+J)'], ['force', 'alignJ', 'Zorla yasla']];
   const SIZES = [6, 7, 8, 9, 10, 11, 12, 14, 16, 18, 20, 24, 28, 32, 36, 40, 48, 60, 72, 96, 120];
   const sec = (title, body, open) => '<div class="sec tk-sec"><div class="sec-h"><h3>' + esc(title) + '</h3></div>' + (open === false ? '' : body) + '</div>';
   const field = (label, name, value, unit, attrs) => '<label class="field"><span>' + esc(label) + '</span><input data-pf="' + name + '" value="' + esc(value) + '" inputmode="decimal" enterkeyhint="done" aria-label="' + esc(label) + '"' + (attrs || '') + '>' + (unit ? '<span class="unit">' + unit + '</span>' : '') + '</label>';
@@ -129,7 +129,9 @@
     // character
     let ch = '<button class="btn tk-font" data-act="tkFontMenu" style="width:100%;justify-content:space-between;height:40px;font-family:\'' + esc(c.family) + '\';font-size:17px" aria-label="Yazı tipi: ' + esc(c.family) + '"><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(c.family) + '</span><span style="font:12px var(--font-ui);color:var(--muted)">▾</span></button>';
     ch += '<div class="row"><label class="field grow"><span>Stil</span><select data-pf="tkStyle" aria-label="Yazı stili" style="flex:1">' + STYLES.map(([k, l]) => '<option value="' + k + '"' + (k === style ? ' selected' : '') + '>' + l + '</option>').join('') + '</select></label>' +
-      '<button class="btn' + (c.bold ? ' on' : '') + '" data-act="tkBold" aria-pressed="' + c.bold + '" title="Kalın" style="font-weight:700;width:32px;justify-content:center">K</button><button class="btn' + (c.italic ? ' on' : '') + '" data-act="tkItalic" aria-pressed="' + c.italic + '" title="İtalik" style="font-style:italic;width:32px;justify-content:center">İ</button></div>';
+      '<button class="btn' + (c.bold ? ' on' : '') + '" data-act="tkBold" aria-pressed="' + c.bold + '" title="Kalın (Ctrl+B)" style="font-weight:700;width:32px;justify-content:center">K</button>' +
+      '<button class="btn' + (c.italic ? ' on' : '') + '" data-act="tkItalic" aria-pressed="' + c.italic + '" title="İtalik (Ctrl+I)" style="font-style:italic;width:32px;justify-content:center">İ</button>' +
+      '<button class="btn' + (c.under ? ' on' : '') + '" data-act="tkUnder" aria-pressed="' + !!c.under + '" title="Altı Çizili (Ctrl+U)" style="text-decoration:underline;font-weight:700;width:32px;justify-content:center"><u>A</u></button></div>';
     ch += '<div class="row"><label class="field"><span>Boyut</span><input data-pf="tkSize" value="' + esc(VP.num(c.size, 1)) + '" list="tk-sizes" inputmode="decimal" enterkeyhint="done" aria-label="Yazı boyutu" style="width:44px"><span class="unit">pt</span></label>' +
       '<button class="btn icon-only" data-act="tkSize:-1" title="Küçült" aria-label="Yazıyı küçült">' + ic('minus', 'sm') + '</button><button class="btn icon-only" data-act="tkSize:1" title="Büyüt" aria-label="Yazıyı büyüt">' + ic('plus', 'sm') + '</button>' +
       '<button class="btn" data-act="tkCase" title="Büyük/küçük harf">Aa ▾</button></div>' +
@@ -191,6 +193,7 @@
     const c = TD.current();
     switch (k) {
       case 'tkFontMenu': TD.fontMenu(el); return true;
+      case 'tkUnder': UI.act('underline'); return true;
       case 'tkBold': TD.applyChar({ bold: !c.bold }); break;
       case 'tkItalic': TD.applyChar({ italic: !c.italic }); break;
       case 'tkSize': {

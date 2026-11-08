@@ -245,13 +245,42 @@
     };
     cv.addEventListener('pointerup', end);
     cv.addEventListener('pointercancel', end);
+    // CorelDRAW Mouse Wheel & Zoom Integration:
+    // - Wheel alone: Zoom In / Zoom Out centered at mouse cursor position (CorelDRAW standard)
+    // - Alt + Wheel: Vertical Pan (Scroll page vertically)
+    // - Ctrl + Wheel or Shift + Wheel: Horizontal Pan (Scroll page horizontally)
     cv.addEventListener(
       'wheel',
       (e) => {
         e.preventDefault();
         const vpt = vptOf(e);
-        if (e.ctrlKey || e.metaKey) VP.zoomAt(Math.exp(-e.deltaY * 0.012), vpt);
-        else VP.panBy(-e.deltaX, -e.deltaY);
+        const dy = e.deltaY;
+        const dx = e.deltaX;
+
+        // Alt + Wheel: CorelDRAW vertical scrolling
+        if (e.altKey && !e.ctrlKey && !e.metaKey) {
+          const step = e.deltaMode === 1 ? dy * 24 : dy;
+          VP.panBy(0, -step);
+          return;
+        }
+
+        // Ctrl + Wheel or Shift + Wheel: CorelDRAW horizontal scrolling
+        if ((e.ctrlKey || e.metaKey || e.shiftKey) && !e.altKey) {
+          const delta = Math.abs(dx) > Math.abs(dy) ? dx : dy;
+          const step = e.deltaMode === 1 ? delta * 24 : delta;
+          VP.panBy(-step, 0);
+          return;
+        }
+
+        // Standard Wheel (no modifier): CorelDRAW Zoom in/out at cursor
+        if (Math.abs(dy) > 0) {
+          // Normalize wheel step for smooth tracking across mice and precision trackpads
+          const factor = dy < 0 ? 1.25 : 0.8;
+          VP.zoomAt(factor, vpt);
+        } else if (Math.abs(dx) > 0) {
+          // Trackpad horizontal swipe pan
+          VP.panBy(-dx, 0);
+        }
       },
       { passive: false }
     );
@@ -286,6 +315,23 @@
         e.preventDefault();
         VP.ui.run(id);
       };
+      // CorelDRAW single-key Alignment Shortcuts (when not editing text)
+      if (!mod && !e.altKey && VP.sel.length && (!tool.busy || !tool.busy())) {
+        const alignMap = {
+          l: 'alignL',
+          r: 'alignR',
+          t: 'alignT',
+          b: 'alignB',
+          c: 'alignCH',
+          e: 'alignCV',
+          p: 'alignPageCenter'
+        };
+        if (alignMap[k]) {
+          e.preventDefault();
+          return VP.ui.run(alignMap[k]);
+        }
+      }
+
       if (mod) {
         if (k === 'z') return run(e.shiftKey ? 'redo' : 'undo');
         if (k === 'y') return run('redo');
@@ -334,7 +380,18 @@
       }
       if (e.key === 'PageUp') return run(e.shiftKey ? 'toFront' : 'forward');
       if (e.key === 'PageDown') return run(e.shiftKey ? 'toBack' : 'backward');
-      if (e.key === 'F4') return run('fit');
+      // CorelDRAW Function Keys (F2, F3, F4, Shift+F4, F9, F12, Shift+F12)
+      if (!mod && !e.altKey && e.key === 'F2') {
+        e.preventDefault();
+        return VP.setTool('zoom');
+      }
+      if (!mod && !e.altKey && !e.shiftKey && e.key === 'F3') {
+        e.preventDefault();
+        return VP.zoomAt(0.5);
+      }
+      if (!mod && !e.altKey && e.key === 'F4') return run(e.shiftKey ? 'fitPage' : 'fit');
+      if (!mod && !e.altKey && e.key === 'F9') return run('fullPreview');
+      if (!mod && !e.altKey && e.key === 'F12') return run(e.shiftKey ? 'fillProps' : 'outlinePen');
       if (e.key === '+' || e.key === '=') return VP.zoomAt(1.25);
       if (e.key === '-') return VP.zoomAt(0.8);
       if (toolKeys[k]) {

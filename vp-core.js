@@ -968,20 +968,50 @@
     VP.commit();
   };
   VP.breakApart = () => {
-    const comps = VP.sel.filter((it) => it instanceof paper.CompoundPath);
-    if (!comps.length) return VP.toast('Parçalamak için bileşik eğri seçin');
-    const out = VP.sel.filter((it) => !(it instanceof paper.CompoundPath));
-    comps.forEach((cp) => {
-      cp.children.slice().forEach((c) => {
-        const p = c.clone({ insert: false });
-        copyLook(p, cp);
-        p.insertAbove(cp);
-        out.push(p);
-      });
-      cp.remove();
+    if (!VP.sel.length) return VP.toast('Parçalamak için nesne seçin');
+    let changed = false;
+    const out = [];
+
+    VP.sel.forEach((it) => {
+      // 1. Bileşik yol ayırma (CompoundPath)
+      if (it instanceof paper.CompoundPath) {
+        it.children.slice().forEach((c) => {
+          const p = c.clone({ insert: false });
+          copyLook(p, it);
+          p.insertAbove(it);
+          out.push(p);
+        });
+        it.remove();
+        changed = true;
+      }
+      // 2. Çok satırlı sanatsal metin parçalama (Artistic Text lines)
+      else if (it instanceof paper.PointText && it.content.includes('\n')) {
+        const lines = it.content.split('\n');
+        const lh = it.leading || (it.fontSize * 1.25);
+        lines.forEach((line, idx) => {
+          if (!line.trim()) return;
+          const t = it.clone({ insert: false });
+          t.content = line;
+          t.point = it.point.add(new paper.Point(0, idx * lh));
+          t.insertAbove(it);
+          out.push(t);
+        });
+        it.remove();
+        changed = true;
+      }
+      // 3. Vektör efektleri ayırma (Contour, Drop Shadow, Extrude vb.)
+      else if (VP.fx && VP.fx.isFx && VP.fx.isFx(it)) {
+        VP.fx.separate(it);
+        changed = true;
+      } else {
+        out.push(it);
+      }
     });
+
+    if (!changed) return VP.toast('Parçalamak için bileşik eğri, çok satırlı metin veya efekt seçin');
     VP.setSelection(out);
     VP.commit();
+    VP.toast('Nesneler parçalandı (Ctrl+K)');
   };
 
   /* ---------- shaping (boolean operations) ---------- */
@@ -1053,7 +1083,7 @@
     VP.sel.forEach((it) => out.push(conv(it)));
     VP.setSelection(out);
     if (changed) VP.commit();
-    if (skipped) VP.toast(skipped + ' metin eğriye dönüştürülemedi');
+    if (skipped) VP.toast('Yalnızca Fira Sans yazı tipindeki metinler eğriye dönüştürülebilir');
     else if (changed) VP.toast('Eğriye dönüştürüldü');
   };
 
@@ -1062,46 +1092,86 @@
   VP.align = (edge) => {
     const items = VP.sel;
     if (!items.length) return;
-    const ref = VP.settings.alignTo === 'page' || items.length === 1 ? VP.pageRect() : VP.selBounds(items);
+    let ref;
+    const aTo = VP.settings.alignTo || 'selection';
+    if (aTo === 'page' || items.length === 1) {
+      ref = VP.pageRect();
+    } else if (aTo === 'pageEdge') {
+      const pr = VP.pageRect();
+      ref = new paper.Rectangle(0, 0, pr.width, pr.height);
+    } else {
+      ref = VP.selBounds(items);
+    }
     items.forEach((it) => {
       const b = it.bounds;
       let dx = 0;
       let dy = 0;
       if (edge === 'l') dx = ref.left - b.left;
-      if (edge === 'ch') dx = ref.center.x - b.center.x;
-      if (edge === 'r') dx = ref.right - b.right;
-      if (edge === 't') dy = ref.top - b.top;
-      if (edge === 'cv') dy = ref.center.y - b.center.y;
-      if (edge === 'b') dy = ref.bottom - b.bottom;
+      else if (edge === 'ch') dx = ref.center.x - b.center.x;
+      else if (edge === 'r') dx = ref.right - b.right;
+      else if (edge === 't') dy = ref.top - b.top;
+      else if (edge === 'cv') dy = ref.center.y - b.center.y;
+      else if (edge === 'b') dy = ref.bottom - b.bottom;
+      else if (edge === 'pageCenter') {
+        const pr = VP.pageRect();
+        dx = pr.center.x - b.center.x;
+        dy = pr.center.y - b.center.y;
+      }
       VP.T.move([it], new paper.Point(dx, dy));
     });
     VP.commit();
   };
   VP.distribute = (axis, mode) => {
     const items = VP.sel.slice();
-    if (items.length < 3) return VP.toast('Dağıtmak için en az üç nesne seçin');
-    const key = axis === 'h' ? 'x' : 'y';
-    const size = axis === 'h' ? 'width' : 'height';
+    if (items.length < 2) return VP.toast('Dağıtmak için en az iki nesne seçin');
+    const isH = axis === 'h';
+    const key = isH ? 'x' : 'y';
+    const size = isH ? 'width' : 'height';
+    const minEdge = isH ? 'left' : 'top';
+    const maxEdge = isH ? 'right' : 'bottom';
+
+    // Sort items along the axis
     items.sort((a, b) => a.bounds.center[key] - b.bounds.center[key]);
-    if (mode === 'space') {
+
+    if (mode === 'space' || mode === 'spacing') {
       const first = items[0].bounds;
       const last = items[items.length - 1].bounds;
-      const total = (axis === 'h' ? last.right - first.left : last.bottom - first.top) - items.reduce((s, it) => s + it.bounds[size], 0);
-      const gap = total / (items.length - 1);
-      let pos = axis === 'h' ? first.right + gap : first.bottom + gap;
+      const totalSpan = (isH ? last.right - first.left : last.bottom - first.top);
+      const totalItemsSize = items.reduce((s, it) => s + it.bounds[size], 0);
+      const gap = (totalSpan - totalItemsSize) / (items.length - 1);
+      let curPos = first[maxEdge] + gap;
       items.slice(1, -1).forEach((it) => {
         const b = it.bounds;
-        const cur = axis === 'h' ? b.left : b.top;
-        VP.T.move([it], axis === 'h' ? new paper.Point(pos - cur, 0) : new paper.Point(0, pos - cur));
-        pos += b[size] + gap;
+        const delta = curPos - b[minEdge];
+        VP.T.move([it], isH ? new paper.Point(delta, 0) : new paper.Point(0, delta));
+        curPos += b[size] + gap;
+      });
+    } else if (mode === 'left' || mode === 'top') {
+      const start = items[0].bounds[minEdge];
+      const end = items[items.length - 1].bounds[minEdge];
+      const step = (end - start) / (items.length - 1);
+      items.forEach((it, i) => {
+        const target = start + step * i;
+        const delta = target - it.bounds[minEdge];
+        VP.T.move([it], isH ? new paper.Point(delta, 0) : new paper.Point(0, delta));
+      });
+    } else if (mode === 'right' || mode === 'bottom') {
+      const start = items[0].bounds[maxEdge];
+      const end = items[items.length - 1].bounds[maxEdge];
+      const step = (end - start) / (items.length - 1);
+      items.forEach((it, i) => {
+        const target = start + step * i;
+        const delta = target - it.bounds[maxEdge];
+        VP.T.move([it], isH ? new paper.Point(delta, 0) : new paper.Point(0, delta));
       });
     } else {
+      // mode === 'center'
       const c0 = items[0].bounds.center[key];
       const c1 = items[items.length - 1].bounds.center[key];
       const step = (c1 - c0) / (items.length - 1);
       items.forEach((it, i) => {
         const d = c0 + step * i - it.bounds.center[key];
-        VP.T.move([it], axis === 'h' ? new paper.Point(d, 0) : new paper.Point(0, d));
+        VP.T.move([it], isH ? new paper.Point(d, 0) : new paper.Point(0, d));
       });
     }
     VP.commit();

@@ -469,9 +469,9 @@
             [['print', 'Yazdırma'], ['copy', 'Kopyalama'], ['modify', 'Değiştirme'], ['annot-forms', 'Not ekleme']].map(([k, l]) => '<label class="field"><input type="checkbox" data-perm="' + k + '"' + (o.perms.includes(k) ? ' checked' : '') + '><span style="text-transform:none">' + l + '</span></label>').join(' ') + '</details>';
         }
       }
-      const notes = { pdf: 'Fira Sans metinler gömülür, diğer yazı tipleri eğriye çevrilir; yumuşak gölgeler resim olarak eklenir.', svg: 'Milimetre ölçülü SVG · Gölgeler SVG filtresi olur.', png: 'Kayıpsız resim.', jpg: 'Küçük dosya, saydamlık yok.', webp: 'Küçük dosya, saydamlık desteklenir.', eps: 'PostScript 3 (EPS) · Saydamlık ve gölgeler düzleştirilir; metinler eğriye çevrilir.', dxf: 'CAD için çizgiler ve metinler (mm) · Dolgular aktarılmaz, yalnız anahatlar.' };
+      const notes = { pdf: 'Fira Sans metinler gömülür; yumuşak gölgeler resim olarak eklenir.', svg: 'Milimetre ölçülü SVG · Gölgeler SVG filtresi olur.', png: 'Kayıpsız resim.', jpg: 'Küçük dosya, saydamlık yok.', webp: 'Küçük dosya, saydamlık desteklenir.', eps: 'PostScript 3 (EPS) · Saydamlık ve gölgeler düzleştirilir; Fira dışındaki metinler Helvetica ile yazılır.', dxf: 'CAD için çizgiler ve metinler (mm) · Dolgular aktarılmaz, yalnız anahatlar.' };
       h += '<p class="sec-note">' + esc(print ? 'Sistem yazdırma penceresi açılır; iPad’de AirPrint yazıcınızı seçebilirsiniz. Yazdırma bu görünümde engelliyse “Baskı PDF’i” ile kaydedip yazdırın.' : notes[o.fmt]) + '</p>';
-      h += '<div class="actions"><button class="btn" data-x="no">Vazgeç</button>' + (print ? (A.separations ? '<button class="btn" data-x="seps">' + ic('layers', 'sm') + 'Baskı ayrımları…</button>' : '') + '<button class="btn" data-x="printPdf">' + ic('pdf', 'sm') + 'Baskı PDF’i</button><button class="btn primary" data-x="print">' + ic('pdf', 'sm') + 'Yazdır</button>' : '<button class="btn primary" data-x="go">' + ic('export', 'sm') + 'Dışa aktar</button>') + '</div>';
+      h += '<div class="actions"><button class="btn" data-x="no">Vazgeç</button>' + (print ? '<button class="btn" data-x="printPdf">' + ic('pdf', 'sm') + 'Baskı PDF’i</button><button class="btn primary" data-x="print">' + ic('pdf', 'sm') + 'Yazdır</button>' : '<button class="btn primary" data-x="go">' + ic('export', 'sm') + 'Dışa aktar</button>') + '</div>';
       root.innerHTML = h;
     };
     UI.modal('', (root, close) => {
@@ -510,10 +510,6 @@
         if (!x) return;
         const k = x.dataset.x;
         if (k === 'no') return close();
-        if (k === 'seps') {
-          close();
-          return UI.run('separations');
-        }
         read();
         if (k === 'saveStyle') {
           const name = await UI.prompt({ title: 'Baskı stilini kaydet', label: 'Stil adı', value: 'Baskı stili ' + (styles().length + 1) });

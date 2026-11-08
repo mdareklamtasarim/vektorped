@@ -323,6 +323,10 @@
   TX.fitSelection = () => {
     const path = VP.sel.find(FX.isShape);
     const text = VP.sel.find((it) => it instanceof paper.PointText);
+    if (text && !path) {
+      VP.setTool('textPathTool');
+      return VP.toast('Metin seçildi · Şimdi metnin yerleşeceği eğriye dokunun');
+    }
     if (!path) return VP.toast('Bir metin ve bir eğri seçin (ya da yalnızca eğri)');
     TX.fitToPath(path, text || null);
   };
@@ -423,7 +427,10 @@
       const free = Math.max(0, fx.h - P.used[col]);
       const yOff = fx.valign === 'middle' ? free / 2 : fx.valign === 'bottom' ? free : 0;
       const base = fx.y + top + yOff + half + m.asc;
-      if (((fx.align === 'justify' && !ln.last) || fx.align === 'force') && ln.words.length > 1) {
+      const isJust = (fx.align === 'justify' && !ln.last) || fx.align === 'force';
+      let lineW = ln.width;
+      let startX = x0;
+      if (isJust && ln.words.length > 1) {
         const ws = ln.words.map((w) => m(w));
         const gap = (colW - ws.reduce((a, b) => a + b, 0)) / (ln.words.length - 1);
         let x = x0;
@@ -431,11 +438,24 @@
           g.addChild(makeText(fx.font, look, w, Pt(x, base)));
           x += ws[k] + gap;
         });
+        lineW = colW;
       } else {
         let x = x0;
         if (fx.align === 'center') x = x0 + (colW - ln.width) / 2;
         else if (fx.align === 'right') x = x0 + colW - ln.width;
+        startX = x;
         g.addChild(makeText(fx.font, look, ln.text, Pt(x, base)));
+      }
+      if (fx.underline || (fx.font && fx.font.underline)) {
+        const uY = base + Math.max(1, fx.font.size * 0.12);
+        const uLine = new paper.Path.Line({
+          from: [startX, uY],
+          to: [startX + lineW, uY],
+          strokeColor: look.fill.color || look.stroke.color || '#000000',
+          strokeWidth: Math.max(1, fx.font.size * 0.07),
+          insert: false
+        });
+        g.addChild(uLine);
       }
     });
     whenFont(g, fx.font);
@@ -2051,7 +2071,17 @@
         VP.toast('Sayfada sürükleyerek tablo çizin');
       }
     },
-    txEditText: { label: 'Metni düzenle', icon: 'text', run: () => anyTx() && TX.edit(anyTx()), enabled: () => !!(one('paragraph') || one('textpath')) },
+    txEditText: {
+      label: 'Metni düzenle',
+      icon: 'text',
+      run: () => {
+        const pt = VP.sel.find((it) => it instanceof paper.PointText);
+        if (pt) return UI.editText(pt);
+        const tx = anyTx();
+        if (tx) return TX.edit(tx);
+      },
+      enabled: () => VP.sel.some((it) => it instanceof paper.PointText || TX.isTx(it))
+    },
     txBake: { label: 'Ayrı nesnelere çevir', run: () => FX.separate(VP.sel.find(TX.isTx)), enabled: () => VP.sel.some(TX.isTx) },
     txUnpath: { label: 'Metni yoldan çıkar', run: () => FX.clear(VP.sel.find((it) => TX.is(it, 'textpath'))), enabled: () => VP.sel.some((it) => TX.is(it, 'textpath')) }
   });

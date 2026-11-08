@@ -1,0 +1,258 @@
+/* VektörPad, CorelDRAW 2026 look: dock part (dockers, docker tab strip, Özellikler, Nesneler, Öğren). */
+
+/* ---------- colours: light theme from the theme variables, dark theme measured from Corel ---------- */
+html {
+  --cd-bg: var(--panel);
+  --cd-fg: var(--fg);
+  --cd-mut: var(--muted);
+  --cd-line: var(--line);
+  --cd-field: var(--panel-2);
+  --cd-field-line: var(--line);
+  --cd-combo: #e2e2e2;
+  --cd-group: #e6e6e6;
+  --cd-sel: #cde2f6;
+  --cd-sel-fg: var(--fg);
+  --cd-on: #c5d7ea;
+  --cd-on-line: #8fb0d2;
+  --cd-tab: #d4d4d4;
+  --cd-tab-fg: #2a2a2a;
+  --cd-tab-on: #34577d;
+  --cd-tab-on-fg: #ffffff;
+  --cd-link: #1b6fc8;
+  --cd-hover: rgba(0, 0, 0, 0.06);
+}
+html[data-theme="dark"] {
+  --cd-bg: #262626; --cd-fg: #d8d8d8; --cd-mut: #9a9a9a; --cd-line: #3a3a3a; --cd-field: #252525; --cd-field-line: #444444;
+  --cd-combo: #4a4a4b; --cd-group: #3c3c3c; --cd-sel: #1b456f; --cd-sel-fg: #ffffff; --cd-on: #34577d; --cd-on-line: #4e6f93;
+  --cd-tab: #5f5f5f; --cd-tab-fg: #e6e6e6; --cd-tab-on: #34577d; --cd-tab-on-fg: #ffffff; --cd-link: #4aa3ff; --cd-hover: rgba(255, 255, 255, 0.07);
+}
+@media (prefers-color-scheme: dark) {
+  html:not([data-theme="light"]) {
+    --cd-bg: #262626; --cd-fg: #d8d8d8; --cd-mut: #9a9a9a; --cd-line: #3a3a3a; --cd-field: #252525; --cd-field-line: #444444;
+    --cd-combo: #4a4a4b; --cd-group: #3c3c3c; --cd-sel: #1b456f; --cd-sel-fg: #ffffff; --cd-on: #34577d; --cd-on-line: #4e6f93;
+    --cd-tab: #5f5f5f; --cd-tab-fg: #e6e6e6; --cd-tab-on: #34577d; --cd-tab-on-fg: #ffffff; --cd-link: #4aa3ff; --cd-hover: rgba(255, 255, 255, 0.07);
+  }
+}
+
+/* ---------- docker frame: flat, title row with ⏩ and ✕ ---------- */
+html[data-skin] #dock { width: 268px; background: var(--cd-bg); color: var(--cd-fg); border: 0; border-left: 1px solid var(--cd-line); border-radius: 0; box-shadow: none; }
+@media (min-width: 641px) and (max-width: 1100px) { html[data-skin] #dock { width: 256px; } }
+html[data-skin] #dock .dock-head { height: 30px; padding: 0 2px 0 8px; gap: 0; background: var(--cd-bg); border-bottom: 0; }
+html[data-skin] #dock .dock-title { height: 28px; padding: 0; font-size: 12.5px; font-weight: 600; color: var(--cd-fg); background: transparent; border-radius: 0; }
+html[data-skin] #dock .dock-title::after { content: none; }
+html[data-skin] #dock .dock-title:hover { background: transparent; }
+html[data-skin] #dock .cd-head-btn { width: 26px; height: 26px; border-radius: 2px; color: var(--cd-fg); background: transparent; box-shadow: none; display: inline-grid; place-items: center; }
+html[data-skin] #dock .cd-head-btn:hover { background: var(--cd-hover); }
+html[data-skin] #dock .cd-head-btn svg.i { width: 14px; height: 14px; }
+html[data-skin] #dock .dock-body { overflow-x: hidden; padding: 4px 10px 12px; gap: 0; background: var(--cd-bg); scrollbar-width: thin; }
+#dock[data-cd-tab="props"] .dock-body, #dock[data-cd-tab="objects"] .dock-body, #dock[data-cd-tab="hints"] .dock-body { padding: 0; }
+
+/* section headers in every docker: bold title, thin line between sections, no band */
+html[data-skin] #dock .sec { gap: 6px; padding: 8px 0 10px; border-top: 1px solid var(--cd-line); }
+html[data-skin] #dock .dock-body > .sec:first-child, html[data-skin] #dock .dock-body > .sec-note:first-child + .sec, html[data-skin] #dock .cd-psec > .cd-psec-h + .sec, html[data-skin] #dock .cd-psec > .cd-psec-h + .sec-note + .sec { border-top: 0; }
+html[data-skin] #dock .sec-h { margin: 0; padding: 0; min-height: 24px; background: transparent; border: 0; }
+html[data-skin] #dock .sec-h h3 { font-size: 12px; font-weight: 700; color: var(--cd-fg); text-transform: none; letter-spacing: 0; }
+html[data-skin] #dock .sec-h h3::before { content: none; }
+html[data-skin] #dock .sec-note { color: var(--cd-mut); font-size: 11.5px; }
+html[data-skin] #dock .btn { border-radius: 2px; background: var(--cd-field); border: 1px solid var(--cd-field-line); color: var(--cd-fg); min-height: 26px; }
+html[data-skin] #dock .btn.on { background: var(--cd-on); border-color: var(--cd-on-line); color: var(--cd-tab-on-fg); }
+html[data-skin] #dock .field input, html[data-skin] #dock .field select, html[data-skin] #dock select { background: var(--cd-field); color: var(--cd-fg); border-color: var(--cd-field-line); border-radius: 2px; }
+
+/* ---------- vertical docker tabs: icon above vertical text, active blue, "+" below ---------- */
+html[data-skin] #dock-tabs { width: 26px; padding: 2px 2px 0; gap: 4px; background: var(--cd-bg); border-left: 1px solid var(--cd-line); align-items: center; }
+html[data-skin] #dock-tabs .cd-tab {
+  width: 22px; min-height: 0; padding: 6px 0 8px; display: flex; flex-direction: column; align-items: center; gap: 6px;
+  writing-mode: horizontal-tb; border: 0; border-radius: 2px; background: var(--cd-tab); color: var(--cd-tab-fg); box-shadow: none;
+  font-size: 11.5px; font-weight: 400; line-height: 1;
+}
+html[data-skin] #dock-tabs .cd-tab:hover { filter: brightness(1.12); }
+html[data-skin] #dock-tabs .cd-tab.on { background: var(--cd-tab-on); color: var(--cd-tab-on-fg); font-weight: 400; box-shadow: none; }
+#dock-tabs .cd-tab svg.i { width: 15px; height: 15px; flex: none; }
+#dock-tabs .cd-tab-l { writing-mode: vertical-rl; white-space: nowrap; }
+#dock-tabs .cd-tab-add { flex: none; width: 22px; height: 26px; display: grid; place-items: center; border: 0; border-radius: 2px; background: transparent; color: var(--cd-fg); margin-top: 4px; }
+#dock-tabs .cd-tab-add:hover { background: var(--cd-hover); }
+#dock-tabs .cd-tab-add svg.i { width: 16px; height: 16px; stroke-width: 2; }
+
+/* ---------- shared small controls (Corel-sized) ---------- */
+#dock .cd-mut { color: var(--cd-mut); }
+#dock .cd-pad { padding: 6px 10px; }
+#dock .cd-ib { width: 26px; height: 26px; display: inline-grid; place-items: center; border: 1px solid transparent; border-radius: 2px; background: transparent; color: var(--cd-fg); padding: 0; flex: none; }
+#dock .cd-ib:hover:not(:disabled) { background: var(--cd-hover); }
+#dock .cd-ib.on { background: var(--cd-on); border-color: var(--cd-on-line); color: #fff; }
+#dock .cd-ib:disabled { opacity: 0.35; }
+#dock .cd-ib svg.i { width: 18px; height: 18px; }
+#dock .cd-r { display: flex; align-items: center; gap: 6px; min-height: 28px; }
+#dock .cd-combo { display: inline-flex; align-items: center; height: 24px; border: 1px solid var(--cd-field-line); border-radius: 2px; background: var(--cd-combo); color: var(--cd-fg); overflow: hidden; flex: none; }
+#dock .cd-combo input, #dock .cd-combo select { height: 100%; min-width: 0; border: 0; background: transparent; color: inherit; font: inherit; font-size: 12px; padding: 0 6px; outline: none; -webkit-user-select: text; user-select: text; }
+#dock .cd-combo select { appearance: none; -webkit-appearance: none; padding-right: 20px; background-image: linear-gradient(45deg, transparent 50%, currentColor 50%), linear-gradient(-45deg, transparent 50%, currentColor 50%); background-size: 4px 4px; background-position: calc(100% - 10px) 10px, calc(100% - 6px) 10px; background-repeat: no-repeat; width: 100%; }
+#dock .cd-combo select option { background: var(--cd-bg); color: var(--cd-fg); }
+#dock .cd-combo:focus-within { border-color: var(--cd-tab-on); }
+#dock .cd-dd { height: 100%; width: 20px; display: grid; place-items: center; border: 0; padding: 0; background: transparent; color: var(--cd-fg); flex: none; }
+#dock .cd-dd svg.i { width: 12px; height: 12px; stroke-width: 2; }
+#dock .cd-more { height: 24px; min-width: 26px; border: 0; background: transparent; color: var(--cd-fg); font-size: 9px; letter-spacing: 1px; padding: 0 4px; border-radius: 2px; }
+#dock .cd-more:hover:not(:disabled) { background: var(--cd-hover); }
+#dock button:disabled, #dock .cd-combo:has(:disabled) { opacity: 0.4; }
+#dock .cd-combo:has(:disabled) button:disabled { opacity: 1; }
+#dock .cd-spin { display: inline-flex; align-items: stretch; height: 24px; width: 92px; border: 1px solid var(--cd-field-line); border-radius: 2px; background: var(--cd-field); }
+#dock .cd-spin input { flex: 1; min-width: 0; border: 0; background: transparent; color: var(--cd-fg); font: inherit; font-size: 12px; padding: 0 6px; outline: none; -webkit-user-select: text; user-select: text; }
+#dock .cd-spin.dis { opacity: 0.45; }
+#dock .cd-spin-b { display: flex; flex-direction: column; width: 16px; flex: none; }
+#dock .cd-spin-b button { flex: 1; border: 0; padding: 0; background: transparent; color: var(--cd-fg); display: grid; place-items: center; min-height: 0; }
+#dock .cd-spin-b button:disabled { opacity: 1; }
+#dock .cd-spin-b svg.i { width: 11px; height: 11px; stroke-width: 2; }
+#dock .cd-check { display: flex; align-items: center; gap: 7px; min-height: 22px; border: 0; background: transparent; color: var(--cd-fg); padding: 0; font-size: 12px; text-align: left; }
+#dock .cd-check i { width: 12px; height: 12px; flex: none; border: 1px solid var(--cd-mut); border-radius: 1px; background: var(--cd-field); display: grid; place-items: center; }
+#dock .cd-check.on i { background: var(--cd-tab-on); border-color: var(--cd-on-line); }
+#dock .cd-check.on i::after { content: ""; width: 6px; height: 3px; border-left: 1.5px solid #fff; border-bottom: 1.5px solid #fff; transform: translateY(-1px) rotate(-45deg); }
+#dock .cd-check:disabled { opacity: 0.45; }
+#dock .cd-wide { width: 100%; justify-content: flex-start; gap: 6px; }
+#dock .cd-btns { display: flex; flex-direction: column; gap: 4px; }
+
+/* ---------- Özellikler: section icon tabs, sections ---------- */
+#dock .cd-props { display: flex; flex-direction: column; }
+#dock .cd-pnav { position: sticky; top: 0; z-index: 3; display: flex; align-items: center; gap: 2px; padding: 6px 6px; background: var(--cd-bg); border-bottom: 1px solid var(--cd-line); }
+#dock .cd-pnav .cd-ib { width: 25px; height: 26px; flex: 0 1 25px; min-width: 20px; }
+#dock .cd-pnav .cd-sp + .cd-ib { margin-left: 4px; }
+#dock .cd-pnav .cd-ib svg.i { width: 18px; height: 18px; }
+#dock .cd-sp { flex: 1; }
+#dock .cd-psec { padding: 0 10px; }
+#dock .cd-psec-h { font-size: 13px; font-weight: 700; color: var(--cd-fg); padding: 10px 0 2px; border-top: 1px solid var(--cd-line); }
+#dock .cd-props.single .cd-psec { display: none; }
+#dock .cd-props.single .cd-psec-h { display: none; }
+#dock .cd-props.single[data-sec="outline"] .cd-psec[data-sec="outline"],
+#dock .cd-props.single[data-sec="fill"] .cd-psec[data-sec="fill"],
+#dock .cd-props.single[data-sec="transp"] .cd-psec[data-sec="transp"],
+#dock .cd-props.single[data-sec="fx"] .cd-psec[data-sec="fx"],
+#dock .cd-props.single[data-sec="shape"] .cd-psec[data-sec="shape"],
+#dock .cd-props.single[data-sec="art"] .cd-psec[data-sec="art"],
+#dock .cd-props.single[data-sec="bitmap"] .cd-psec[data-sec="bitmap"] { display: block; }
+#dock .cd-props .cd-psec > .sec-note:first-of-type { padding-top: 8px; }
+
+/* Anahat */
+#dock .cd-ol { gap: 4px; }
+#dock .cd-ol .sec-h { margin-bottom: 2px; }
+#dock .cd-color { display: inline-flex; align-items: center; height: 24px; border: 1px solid var(--cd-field-line); border-radius: 2px; background: var(--cd-combo); }
+#dock .cd-swatch { position: relative; display: block; width: 96px; height: 18px; margin: 0 2px 0 3px; background: var(--c); border: 1px solid rgba(128, 128, 128, 0.5); cursor: pointer; overflow: hidden; }
+#dock .cd-color.none .cd-swatch { background: linear-gradient(to top right, transparent calc(50% - 1px), #e33 50%, transparent calc(50% + 1px)), var(--cd-field); }
+#dock .cd-swatch input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; border: 0; padding: 0; cursor: pointer; }
+#dock .cd-w { width: 116px; }
+#dock .cd-w input { flex: 1; width: 0; }
+#dock .cd-u { flex: 1; min-width: 0; }
+#dock .cd-line { flex: 1; min-width: 0; padding: 0 0 0 6px; gap: 2px; }
+#dock .cd-line .cd-line-svg { flex: 1; height: 10px; min-width: 0; }
+#dock .cd-line svg.i { width: 12px; height: 12px; stroke-width: 2; margin: 0 4px; }
+#dock .cd-fold { align-self: center; width: 40px; height: 18px; border: 0; background: transparent; color: var(--cd-fg); display: grid; place-items: center; padding: 0; }
+#dock .cd-fold svg.i { width: 12px; height: 12px; stroke-width: 2; }
+#dock .cd-grid { display: grid; grid-template-columns: 96px auto; align-items: center; gap: 6px 8px; padding: 2px 0; }
+#dock .cd-lab { text-align: right; font-size: 12px; color: var(--cd-fg); }
+#dock .cd-tri { display: inline-flex; gap: 8px; }
+#dock .cd-tri .cd-ib { width: 26px; height: 26px; }
+#dock .cd-tri .cd-ib svg.i { width: 20px; height: 20px; }
+#dock .cd-arrow .cd-combo { width: 82px; }
+#dock .cd-ind { padding-left: 24px; }
+#dock .cd-vruler { position: relative; height: 18px; margin: 4px 4px 6px; border-left: 1px solid var(--cd-mut); border-right: 1px solid var(--cd-mut); display: flex; justify-content: space-between; }
+#dock .cd-vruler::before { content: ""; position: absolute; left: 0; right: 0; top: 50%; border-top: 2px solid var(--cd-mut); }
+#dock .cd-vruler i { width: 1px; background: var(--cd-mut); }
+#dock .cd-vruler i:first-child, #dock .cd-vruler i:last-child { visibility: hidden; }
+#dock .cd-off { opacity: 0.45; }
+#dock .cd-ro { font-size: 12px; color: var(--cd-mut); padding-left: 4px; }
+#dock .cd-cal { display: flex; align-items: center; gap: 10px; }
+#dock .cd-cal-f { display: flex; flex-direction: column; gap: 2px; }
+#dock .cd-cal .cd-r svg.i { width: 16px; height: 16px; }
+#dock .cd-nib { width: 46px; height: 46px; flex: none; display: grid; place-items: center; background: #ffffff; border: 1px solid var(--cd-field-line); }
+#dock .cd-nib svg { width: 40px; height: 40px; fill: #111; }
+#dock .cd-checks { display: flex; flex-direction: column; gap: 2px; padding-top: 4px; }
+
+/* popovers opened from the docker */
+.popover .cd-popsw { display: grid; grid-template-columns: repeat(8, 22px); gap: 3px; padding: 4px 10px 6px; }
+.popover .cd-popsw button { width: 22px; height: 18px; border: 1px solid rgba(128, 128, 128, 0.55); border-radius: 1px; padding: 0; }
+.popover .cd-dash-item { display: flex; align-items: center; gap: 10px; }
+.popover .cd-dash-item .cd-line-svg { width: 90px; height: 10px; flex: none; }
+
+/* ---------- Nesneler: search, toolbar, tree ---------- */
+#dock .cd-objs { display: flex; flex-direction: column; min-height: 100%; }
+#dock .cd-search { display: flex; align-items: center; gap: 4px; margin: 6px 8px 4px; height: 26px; padding: 0 6px; border: 1px solid var(--cd-field-line); border-radius: 2px; background: var(--cd-field); }
+#dock .cd-search input { flex: 1; min-width: 0; border: 0; background: transparent; color: var(--cd-fg); font: inherit; font-size: 12px; outline: none; -webkit-user-select: text; user-select: text; }
+#dock .cd-search svg.i { width: 14px; height: 14px; }
+#dock .cd-otb { display: flex; align-items: center; gap: 6px; padding: 4px 8px 6px; }
+#dock .cd-otb .cd-ib svg.i { width: 20px; height: 20px; }
+#dock .cd-otb-cur { flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px; height: 28px; border: 0; background: transparent; color: var(--cd-fg); font-size: 12px; padding: 0 4px; border-radius: 2px; text-align: left; }
+#dock .cd-otb-cur:hover { background: var(--cd-hover); }
+#dock .cd-otb-cur b { font-weight: 700; white-space: nowrap; }
+#dock .cd-otb-cur span { color: var(--cd-mut); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-left: 10px; }
+#dock .cd-otb-cur svg.i { width: 18px; height: 18px; flex: none; }
+#dock .cd-tree { display: flex; flex-direction: column; border-top: 1px solid var(--cd-line); }
+#dock .cd-row { position: relative; display: flex; align-items: center; min-height: 30px; padding: 0 6px 0 calc(4px + var(--d, 0) * 18px); border-bottom: 1px solid var(--cd-line); font-size: 12px; color: var(--cd-fg); }
+#dock .cd-row.cd-nomatch { display: none; }
+#dock .cd-row.cd-group { background: var(--cd-group); font-weight: 400; }
+#dock .cd-row.cd-group b { font-weight: 700; }
+#dock .cd-row.cd-layer { --d: 1; }
+#dock .cd-row.cd-layer .cd-name { font-weight: 700; }
+#dock .cd-row.cd-layer.active .cd-name { color: var(--cd-fg); }
+#dock .cd-row.cd-layer:not(.active) .cd-name { font-weight: 400; }
+#dock .cd-row.cd-obj { --d0: 2; padding-left: calc(4px + (var(--d, 0) + 1) * 18px); }
+#dock .cd-row.sel { background: var(--cd-sel); color: var(--cd-sel-fg); }
+#dock .cd-row.hid .cd-name, #dock .cd-row.hid .cd-th { opacity: 0.45; }
+#dock .cd-row:not(.cd-group):not(.sel):hover { background: var(--cd-hover); }
+#dock .cd-car { width: 18px; height: 22px; flex: none; display: grid; place-items: center; border: 0; padding: 0; background: transparent; color: var(--cd-fg); }
+#dock .cd-car svg.i { width: 10px; height: 10px; }
+#dock .cd-hit { flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px; min-height: 28px; cursor: default; }
+#dock .cd-hit > svg.i { width: 16px; height: 16px; flex: none; }
+#dock .cd-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#dock .cd-th { width: 28px; height: 20px; flex: none; display: grid; place-items: center; }
+#dock .cd-th svg { max-width: 28px; max-height: 20px; width: 28px; height: 20px; }
+#dock .cd-th svg.i { width: 16px; height: 16px; }
+#dock .cd-acts { display: flex; align-items: center; gap: 0; flex: none; }
+#dock .cd-rb { width: 22px; height: 22px; display: grid; place-items: center; border: 0; padding: 0; background: transparent; color: var(--cd-fg); border-radius: 2px; opacity: 0; }
+#dock .cd-rb svg.i { width: 14px; height: 14px; }
+#dock .cd-rb.off { opacity: 0.9; }
+#dock .cd-row:hover .cd-rb, #dock .cd-row.sel .cd-rb, #dock .cd-rb:focus-visible { opacity: 0.85; }
+#dock .cd-rb:hover { background: var(--cd-hover); opacity: 1; }
+#dock .cd-bar { width: 4px; height: 18px; flex: none; margin-left: 4px; border-radius: 0; }
+
+/* ---------- Öğren ---------- */
+#dock .cd-learn { display: flex; flex-direction: column; }
+#dock .cd-learn-top { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; padding: 4px 8px 8px; }
+#dock .cd-learn-top small { font-size: 11px; color: var(--cd-fg); }
+#dock .cd-learn-tile { width: 28px; height: 28px; display: grid; place-items: center; border: 0; border-radius: 2px; background: var(--cd-tab-on); color: #fff; padding: 0; }
+#dock .cd-learn-tile svg.i { width: 20px; height: 20px; }
+#dock .cd-learn-body { padding: 8px 14px 16px; font-size: 12.5px; line-height: 1.55; }
+#dock .cd-learn-body h2 { margin: 6px 0 8px; font-size: 16px; font-weight: 400; color: var(--cd-fg); }
+#dock .cd-learn-body h3 { margin: 14px 0 6px; font-size: 13px; font-weight: 600; color: var(--cd-fg); }
+#dock .cd-learn-body p { margin: 4px 0; }
+#dock .cd-learn-body ul { margin: 0; padding-left: 18px; }
+#dock .cd-learn-body li { margin: 3px 0; }
+#dock .cd-links li::marker { color: var(--cd-fg); }
+#dock .cd-link { border: 0; background: transparent; padding: 1px 0; color: var(--cd-link); font: inherit; text-align: left; cursor: pointer; }
+#dock .cd-link:hover { text-decoration: underline; }
+
+/* ---------- touch screens: finger-sized targets (same look) ---------- */
+@media (pointer: coarse) {
+  html[data-skin] #dock { width: 284px; }
+  html[data-skin] #dock .dock-head { height: 38px; }
+  html[data-skin] #dock .cd-head-btn { width: 38px; height: 36px; }
+  html[data-skin] #dock-tabs { width: 34px; }
+  html[data-skin] #dock-tabs .cd-tab { width: 30px; padding: 10px 0 12px; }
+  #dock-tabs .cd-tab-add { width: 30px; height: 36px; }
+  #dock .cd-ib, #dock .cd-pnav .cd-ib, #dock .cd-tri .cd-ib { width: 34px; height: 34px; }
+  #dock .cd-pnav { gap: 1px; padding: 4px 3px; }
+  #dock .cd-pnav .cd-ib { width: 28px; height: 36px; flex-basis: 28px; }
+  #dock .cd-r { min-height: 38px; }
+  #dock .cd-combo, #dock .cd-color, #dock .cd-spin, #dock .cd-more { height: 34px; }
+  #dock .cd-dd { width: 30px; }
+  #dock .cd-spin { width: 110px; }
+  #dock .cd-spin-b { width: 26px; }
+  #dock .cd-swatch { height: 26px; }
+  #dock .cd-fold { height: 30px; width: 60px; }
+  #dock .cd-check { min-height: 36px; }
+  #dock .cd-check i { width: 16px; height: 16px; }
+  #dock .cd-row { min-height: 40px; }
+  #dock .cd-car { width: 28px; height: 36px; }
+  #dock .cd-rb { width: 34px; height: 36px; opacity: 0.7; }
+  #dock .cd-search { height: 36px; }
+  #dock .cd-link { padding: 6px 0; }
+}
+/* phones: the docker covers the drawing (tabs hidden there by the base layout) */
+@media (max-width: 640px) {
+  html[data-skin] #dock { width: auto; border-left: 0; }
+}

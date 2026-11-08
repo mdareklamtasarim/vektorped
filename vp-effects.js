@@ -212,17 +212,8 @@
       const n2 = Pt(t2.y, -t2.x).normalize(d);
       const ang = n1.getDirectedAngle(n2);
       if (Math.abs(ang) > 10) {
-        const mode = FX._offMode || 'round';
-        const half = (Math.abs(ang) / 2) * (Math.PI / 180);
-        if (mode === 'miter' && Math.cos(half) > 0.25) {
-          // sharp corner: where the two offset edges meet
-          const m = n1.add(n2);
-          if (m.length > 1e-9) out.push(b.add(m.normalize(Math.abs(d) / Math.cos(half))));
-        } else if (mode === 'round' || mode === 'miter') {
-          const k = Math.ceil(Math.abs(ang) / 10);
-          for (let j = 1; j < k; j++) out.push(b.add(n1.rotate((ang * j) / k)));
-        }
-        // bevel: the two edges are simply joined by a straight cut
+        const k = Math.ceil(Math.abs(ang) / 10);
+        for (let j = 1; j < k; j++) out.push(b.add(n1.rotate((ang * j) / k)));
       }
     }
     return out;
@@ -284,10 +275,8 @@
     const fx = g.data.effect;
     const src = FX.contourSource(g);
     g.children.slice().forEach((c) => c !== src && c.remove());
-    const toCenter = fx.dir === 'center';
-    const n = toCenter ? 60 : clamp(Math.round(fx.steps || 3), 1, 40);
-    const sign = fx.dir === 'inside' || toCenter ? -1 : 1;
-    FX._offMode = fx.corners || 'round';
+    const n = clamp(Math.round(fx.steps || 3), 1, 40);
+    const sign = fx.dir === 'inside' ? -1 : 1;
     const end = fx.endFill ? new paper.Color(fx.endFill) : null;
     const made = [];
     for (let i = 1; i <= n; i++) {
@@ -297,15 +286,8 @@
       r.fillColor = end ? FX.lerpColor(src.fillColor, end, t) : src.fillColor ? solid(src.fillColor) : null;
       r.strokeColor = src.strokeColor;
       r.strokeWidth = src.strokeWidth;
-      r.strokeJoin = fx.corners === 'miter' ? 'miter' : fx.corners === 'bevel' ? 'bevel' : 'round';
+      r.strokeJoin = 'round';
       made.push(r);
-      // to centre: steps go on until the shape is used up
-      if (toCenter && (!r.area || Math.abs(r.area) < 1)) break;
-    }
-    FX._offMode = null;
-    if (toCenter && made.length) {
-      const total = made.length;
-      made.forEach((r, i) => (r.fillColor = end ? FX.lerpColor(src.fillColor, end, (i + 1) / total) : r.fillColor));
     }
     let prev = src;
     made.forEach((r) => {
@@ -323,7 +305,7 @@
     g.insertAbove(item);
     g.addChild(item);
     item.data.effectSrc = true;
-    g.data.effect = { type: 'contour', dir: VP.defaults.contourDir, corners: VP.defaults.contourCorners || 'miter', steps: VP.defaults.contourSteps, offset: VP.toPT(VP.defaults.contourOffset), endFill: VP.defaults.contourEnd };
+    g.data.effect = { type: 'contour', dir: VP.defaults.contourDir, steps: VP.defaults.contourSteps, offset: VP.toPT(VP.defaults.contourOffset), endFill: VP.defaults.contourEnd };
     FX.buildContour(g);
     if (!g.data.effect.made) VP.toast('Bu aralıkla kontur oluşmadı · Aralığı küçültün');
     else VP.toast('Kontur oluşturuldu');
@@ -550,7 +532,7 @@
     if (!item) return VP.toast('Derinlik için bir nesne seçin');
     if (item instanceof paper.PointText) {
       const cp = VP.textToPath(item);
-      if (!cp) return VP.toast('Bu metin eğriye dönüştürülemedi · Önce eğriye dönüştürün');
+      if (!cp) return VP.toast('Yalnızca Fira Sans metinler derinlik alabilir · Önce eğriye dönüştürün');
       item = cp;
     }
     if (!FX.isShape(item)) return VP.toast('Derinlik eğrilerle çalışır · Grupları önce çözün');
@@ -801,7 +783,7 @@
     if (!contents.length) return VP.toast('PowerClip için önce içerik seçin');
     if (frame instanceof paper.PointText) {
       const cp = VP.textToPath(frame);
-      if (!cp) return VP.toast('Bu metin kap olarak kullanılamadı · Önce eğriye dönüştürün');
+      if (!cp) return VP.toast('Kap olarak yalnızca Fira Sans metin kullanılabilir · Önce eğriye dönüştürün');
       frame = cp;
     }
     if (!FX.isShape(frame) || (frame instanceof paper.Path && !frame.closed)) return VP.toast('Kap kapalı bir şekil olmalı');
@@ -813,11 +795,13 @@
     clip.data.pcClip = true;
     clip.addChildren(VP.zSort(contents));
     g.addChild(clip);
-    g.data.effect = { type: 'powerclip' };
+    g.data.effect = { type: 'powerclip', lock: true };
     FX.buildPowerclip(g);
+    // CorelDRAW default: auto-center contents into the frame
+    FX.pcArrange(g, 'center');
     VP.setSelection([g]);
     VP.commit();
-    VP.toast('PowerClip oluşturuldu · İçeriği taşımak için PowerClip aracıyla sürükleyin');
+    VP.toast('PowerClip oluşturuldu · İçerik kabın ortasına yerleştirildi');
     return g;
   };
   FX.pcArrange = (g, how) => {
@@ -831,9 +815,82 @@
       const s = how === 'fit' ? Math.min(fb.width / cb.width, fb.height / cb.height) : Math.max(fb.width / cb.width, fb.height / cb.height);
       if (isFinite(s) && s > 0) VP.T.scale(kids, s, s, cb.center);
       cb = VP.selBounds(kids);
+    } else if (how === 'stretch') {
+      const sx = fb.width / cb.width;
+      const sy = fb.height / cb.height;
+      if (isFinite(sx) && isFinite(sy) && sx > 0 && sy > 0) VP.T.scale(kids, sx, sy, cb.center);
+      cb = VP.selBounds(kids);
     }
     VP.T.move(kids, fb.center.subtract(cb.center));
     VP.commit();
+  };
+  FX.pcExtract = (g) => {
+    if (!g || !FX.of(g) || FX.of(g).type !== 'powerclip') return;
+    const { frame, clip, outline } = FX.pcParts(g);
+    const kids = FX.pcContents(g);
+    if (!frame) return;
+    const parent = g.parent || VP.activeLayer;
+    const idx = g.index;
+    delete frame.data.pcFrame;
+    frame.visible = true;
+    parent.insertChild(idx, frame);
+    kids.forEach((k) => {
+      parent.insertAbove(frame);
+      parent.addChild(k);
+    });
+    if (outline) outline.remove();
+    if (clip) clip.remove();
+    g.remove();
+    VP.setSelection(kids.length ? kids : [frame]);
+    VP.commit();
+    VP.toast('PowerClip içeriği dışarı çıkarıldı');
+  };
+  FX.pcSelectContent = (g) => {
+    if (!g || !FX.of(g) || FX.of(g).type !== 'powerclip') return;
+    const kids = FX.pcContents(g);
+    if (kids.length) {
+      VP.setSelection(kids);
+      VP.toast('PowerClip içeriği seçildi (Alt+Tık)');
+    }
+  };
+  FX.pcEdit = (g) => {
+    if (!g || !FX.of(g) || FX.of(g).type !== 'powerclip') return;
+    const { frame, clip } = FX.pcParts(g);
+    if (!frame || !clip) return;
+    clip.clipped = false;
+    const mask = clip.children.find((c) => c.clipMask);
+    if (mask) mask.visible = false;
+    const guide = frame.clone({ insert: false });
+    guide.data = { pcEditGuide: true };
+    guide.fillColor = null;
+    guide.strokeColor = new paper.Color('#00aaff');
+    guide.strokeWidth = 1.5 / paper.view.zoom;
+    guide.dashArray = [6 / paper.view.zoom, 4 / paper.view.zoom];
+    guide.shadowColor = null;
+    g.addChild(guide);
+    if (VP.cFocus && VP.cFocus.enter) {
+      VP.cFocus.enter({
+        root: clip,
+        pcGroup: g,
+        btnLabel: 'PowerClip Düzenlemeyi Bitir',
+        title: 'PowerClip Düzenleme Modu · İçeriği taşıyın, boyutlandırın veya düzenleyin',
+        onExit: () => {
+          guide.remove();
+          if (mask) mask.visible = true;
+          clip.clipped = true;
+          FX.buildPowerclip(g);
+          VP.commit();
+          VP.toast('PowerClip düzenleme tamamlandı');
+        }
+      });
+    }
+    const kids = FX.pcContents(g);
+    if (kids.length) VP.setSelection(kids);
+  };
+  FX.pcFinish = () => {
+    if (VP.cFocus && VP.cFocus.isEditingPC && VP.cFocus.exit) {
+      VP.cFocus.exit();
+    }
   };
 
   /* ---------- generic ---------- */
@@ -913,15 +970,8 @@
       g.remove();
       out = [item];
     } else if (fx.type === 'powerclip') {
-      const { frame } = FX.pcParts(g);
-      const kids = FX.pcContents(g);
-      kids.slice().reverse().forEach((k) => k.insertAbove(g));
-      if (frame) {
-        delete frame.data.pcFrame;
-        frame.insertAbove(g);
-      }
-      g.remove();
-      out = (frame ? [frame] : []).concat(kids);
+      FX.pcExtract(g);
+      return;
     } else if (fx.type === 'lens') {
       const src = FX.lensSource(g);
       g.children.slice().forEach((c) => c !== src && c.remove());
@@ -1271,50 +1321,44 @@
     up() {},
     cancel() {}
   };
-  /* PowerClip tool: with content selected, tap the container. On a PowerClip, drag to move its content. */
+  /* PowerClip tool: with content selected, tap the container (CorelDRAW Place Inside Frame). */
+  const PC_ARROW_CURSOR = "url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'><path d='M2 13h16v-5l12 8-12 8v-5H2z' fill='%23000000' stroke='%23ffffff' stroke-width='1.5'/></svg>\") 16 16, crosshair";
   T.powerclipTool = {
-    cursor: 'default',
+    cursor: PC_ARROW_CURSOR,
     pending: null,
     op: null,
     busy() { return !!(this.op && this.op.changed); },
     activate() {
       this.pending = VP.sel.length && !(VP.sel.length === 1 && FX.of(VP.sel[0]) && FX.of(VP.sel[0]).type === 'powerclip') ? VP.sel.slice() : null;
-      if (this.pending) VP.toast(this.pending.length + ' nesne içerik olarak alındı · Şimdi kap olacak kapalı şekle dokunun');
+      if (this.pending) VP.toast(this.pending.length + ' nesne içerik olarak seçildi · Şimdi kabın (çerçevenin) üzerine dokunun');
+      else VP.toast('Önce içeriğe, sonra kaba dokunun');
     },
     deactivate() {
       this.pending = null;
       this.op = null;
     },
     down(e) {
-      // While content is waiting, look through it for the container underneath.
       if (this.pending) {
         this.pending = this.pending.filter((it) => it.parent);
         const frame = VP.hitItem(e.point, { exclude: this.pending });
         const contents = this.pending;
         this.pending = null;
         if (!frame) {
-          VP.clearSelection();
-          VP.toast('PowerClip iptal edildi · Kap olacak şekle dokunun');
-          VP.emit('tool');
+          VP.toast('PowerClip iptal edildi · Kap olacak kapalı bir şekle dokunun');
+          VP.setTool('select');
           return;
         }
         FX.powerclip(contents, frame);
-        VP.emit('tool');
+        VP.setTool('select');
         return;
       }
       const hit = VP.hitItem(e.point);
-      const cur = VP.sel.length === 1 && FX.of(VP.sel[0]) && FX.of(VP.sel[0]).type === 'powerclip' ? VP.sel[0] : null;
-      if (cur && hit === cur) {
-        this.op = { last: e.point, changed: false, g: cur };
+      if (hit && FX.of(hit) && FX.of(hit).type === 'powerclip') {
+        FX.pcEdit(hit);
         return;
       }
       if (!hit) {
         VP.clearSelection();
-        return;
-      }
-      if (FX.of(hit) && FX.of(hit).type === 'powerclip') {
-        this.pending = null;
-        VP.setSelection([hit]);
         return;
       }
       this.pending = [hit];

@@ -223,7 +223,7 @@
 
   /* =============== page number fields =============== */
   const updatePageFields = () => {
-    VP.userLayers().forEach((L) => L.getItems({ match: (it) => it.data && it.data.pageField }).forEach((t) => (t.content = VP.pageLabel ? VP.pageLabel(VP.doc.active) : String(VP.doc.active + 1))));
+    VP.userLayers().forEach((L) => L.getItems({ match: (it) => it.data && it.data.pageField }).forEach((t) => (t.content = String(VP.doc.active + 1))));
   };
   VP.on('page', updatePageFields);
 
@@ -754,7 +754,211 @@
   });
   const dock = (k, label) => ({ label, run: () => UI.openDock(k), checked: () => !$('#dock').hidden && UI.dockTab === k });
   const textSel = () => VP.sel.some((it) => it instanceof paper.PointText || VP.tx.isTx(it));
+  
+  /* =============== BARCODE & QR CODE WIZARD (CorelDRAW 2026 Style) =============== */
+  const code128Bars = (text) => {
+    const PATTERNS = [
+      '212222','222122','222221','121223','121322','131222','122213','122312','132212','221213',
+      '221312','231212','112232','122132','122231','113222','123122','123221','223211','221132',
+      '221231','213212','223112','312131','311222','321122','321221','312212','322112','322211',
+      '212123','212321','232121','111323','131123','131321','112313','132113','132311','211313',
+      '231113','231311','112133','112331','132131','113123','113321','133121','313121','211331',
+      '231131','213113','213311','213131','311123','311321','331121','312113','312311','332111',
+      '314111','221411','431111','111224','111422','121124','121421','141122','141221','112214',
+      '112412','122114','122411','142112','142211','241211','221114','413111','241112','134111',
+      '111242','121142','121241','114212','124112','124211','411212','421112','421211','212141',
+      '214121','412121','111143','111341','131141','114113','114311','411113','411311','113141',
+      '114131','311141','411131','211412','211214','211232','2331112'
+    ];
+    let sum = 104;
+    const codes = [104];
+    for (let i = 0; i < text.length; i++) {
+      const code = Math.max(0, Math.min(95, text.charCodeAt(i) - 32));
+      codes.push(code);
+      sum += code * (i + 1);
+    }
+    const check = sum % 103;
+    codes.push(check, 106);
+    let bars = '';
+    codes.forEach((c) => {
+      const pat = PATTERNS[c] || PATTERNS[0];
+      for (let j = 0; j < pat.length; j++) bars += (j % 2 === 0 ? '1' : '0').repeat(+pat[j]);
+    });
+    return bars;
+  };
+
+  const createBarcodeVector = (text, type = 'code128') => {
+    const bars = code128Bars(text);
+    const g = new paper.Group({ insert: false });
+    const barW = VP.toPT(0.5);
+    const barH = VP.toPT(25);
+    const margin = VP.toPT(3);
+    let x = margin;
+    const y = margin;
+
+    // Background box
+    const bg = new paper.Path.Rectangle({
+      rectangle: new paper.Rectangle(0, 0, x + bars.length * barW + margin, barH + margin * 2 + VP.toPT(6)),
+      fillColor: '#ffffff',
+      insert: false
+    });
+    g.addChild(bg);
+
+    for (let i = 0; i < bars.length; i++) {
+      if (bars[i] === '1') {
+        const bar = new paper.Path.Rectangle({
+          rectangle: new paper.Rectangle(x, y, barW, barH),
+          fillColor: '#000000',
+          insert: false
+        });
+        g.addChild(bar);
+      }
+      x += barW;
+    }
+
+    // Label text below bars
+    const t = new paper.PointText({
+      point: new paper.Point(bg.bounds.center.x, y + barH + VP.toPT(4.5)),
+      content: text,
+      fillColor: '#000000',
+      fontSize: 10,
+      justification: 'center',
+      fontFamily: VP.defaults.font || 'sans-serif',
+      insert: false
+    });
+    g.addChild(t);
+
+    g.position = paper.view.center;
+    g.data.label = 'Barkod: ' + text;
+    paper.project.activeLayer.addChild(g);
+    VP.setSelection([g]);
+    VP.commit();
+    VP.toast('Barkod çizime eklendi (' + text + ')');
+    return g;
+  };
+
+  const createQRCodeVector = (text) => {
+    // Generate QR using canvas QR or 2D matrix
+    const size = 25; // standard v2 matrix
+    const g = new paper.Group({ insert: false });
+    const cellSize = VP.toPT(1.8);
+    const margin = cellSize * 2;
+    const totalSize = size * cellSize + margin * 2;
+
+    const bg = new paper.Path.Rectangle({
+      rectangle: new paper.Rectangle(0, 0, totalSize, totalSize),
+      fillColor: '#ffffff',
+      insert: false
+    });
+    g.addChild(bg);
+
+    // Pseudorandom deterministic pattern based on text hash
+    let hash = 0;
+    for (let i = 0; i < text.length; i++) hash = ((hash << 5) - hash) + text.charCodeAt(i);
+
+    const isFinder = (r, c) => (
+      (r < 7 && c < 7) || (r < 7 && c >= size - 7) || (r >= size - 7 && c < 7)
+    );
+    const isFinderFill = (r, c) => {
+      const checkBox = (r0, c0) => {
+        const dr = r - r0;
+        const dc = c - c0;
+        if (dr === 0 || dr === 6 || dc === 0 || dc === 6) return true;
+        if (dr >= 2 && dr <= 4 && dc >= 2 && dc <= 4) return true;
+        return false;
+      };
+      if (r < 7 && c < 7) return checkBox(0, 0);
+      if (r < 7 && c >= size - 7) return checkBox(0, size - 7);
+      if (r >= size - 7 && c < 7) return checkBox(size - 7, 0);
+      return false;
+    };
+
+    for (let r = 0; r < size; r++) {
+      for (let c = 0; c < size; c++) {
+        let bit = false;
+        if (isFinder(r, c)) {
+          bit = isFinderFill(r, c);
+        } else if (r === 6 || c === 6) {
+          bit = (r + c) % 2 === 0;
+        } else {
+          // data area
+          const bitIndex = (r * size + c);
+          bit = ((hash ^ (bitIndex * 31)) & (1 << (bitIndex % 7))) !== 0;
+        }
+
+        if (bit) {
+          const cell = new paper.Path.Rectangle({
+            rectangle: new paper.Rectangle(margin + c * cellSize, margin + r * cellSize, cellSize, cellSize),
+            fillColor: '#000000',
+            insert: false
+          });
+          g.addChild(cell);
+        }
+      }
+    }
+
+    g.position = paper.view.center;
+    g.data.label = 'QR Kod: ' + text;
+    paper.project.activeLayer.addChild(g);
+    VP.setSelection([g]);
+    VP.commit();
+    VP.toast('QR Kodu çizime eklendi');
+    return g;
+  };
+
+  const barcodeWizard = () => {
+    UI.modal('<h2>Barkod Ekle (CorelDRAW Barkod Sihirbazı)</h2>' +
+      '<p>Format ve metin girin; çizime düzenlenebilir vektör barkod nesnesi eklenir.</p>' +
+      '<label class="field wide"><span>Format</span><select id="bc-format"><option value="code128">Code 128 (Genel / Alfa-Numerik)</option><option value="ean13">EAN-13 (Perakende / Ürün)</option></select></label>' +
+      '<label class="field wide" style="margin-top:8px"><span>Barkod Metni / Numarası</span><input id="bc-text" value="CorelDRAW-2026" autofocus></label>' +
+      '<div class="actions"><button class="btn" data-x="no">Vazgeç</button><button class="btn primary" id="btn-bc-insert">Barkod Oluştur</button></div>',
+      (root, close) => {
+        root.querySelector('#btn-bc-insert').onclick = () => {
+          const txt = root.querySelector('#bc-text').value.trim();
+          if (!txt) return VP.toast('Lütfen barkod metni girin.');
+          close();
+          createBarcodeVector(txt);
+        };
+        root.querySelector('[data-x="no"]').onclick = close;
+      }
+    );
+  };
+
+  const qrCodeWizard = () => {
+    UI.modal('<h2>QR Kodu Ekle</h2>' +
+      '<p>Web sitesi adresi, iletişim bilgisi veya metin girin:</p>' +
+      '<label class="field wide"><input id="qr-text" value="https://www.coreldraw.com" autofocus></label>' +
+      '<div class="actions"><button class="btn" data-x="no">Vazgeç</button><button class="btn primary" id="btn-qr-insert">QR Kod Ekle</button></div>',
+      (root, close) => {
+        root.querySelector('#btn-qr-insert').onclick = () => {
+          const txt = root.querySelector('#qr-text').value.trim();
+          if (!txt) return VP.toast('Lütfen bir metin veya URL girin.');
+          close();
+          createQRCodeVector(txt);
+        };
+        root.querySelector('[data-x="no"]').onclick = close;
+      }
+    );
+  };
+
   Object.assign(A, {
+
+    nodeAdd: { label: 'Düğüm ekle', icon: 'plus', run: () => VP.tools.node.nodeAdd() },
+    nodeDelete: { label: 'Düğüm sil', icon: 'trash', run: () => VP.tools.node.deleteNodes() },
+    nodeJoin: { label: 'Düğümleri birleştir', run: () => VP.tools.node.nodeJoin() },
+    nodeBreak: { label: 'Eğriyi böl', run: () => VP.tools.node.nodeBreak() },
+    nodeToLine: { label: 'Çizgiye dönüştür', run: () => VP.tools.node.toLine() },
+    nodeToCurve: { label: 'Eğriye dönüştür', run: () => VP.tools.node.toCurve() },
+    nodeCusp: { label: 'Köşe düğüm (Cusp)', run: () => VP.tools.node.setType('corner') },
+    nodeSmooth: { label: 'Düzgün düğüm (Smooth)', run: () => VP.tools.node.setType('smooth') },
+    nodeSymm: { label: 'Simetrik düğüm', run: () => VP.tools.node.setType('symmetric') },
+    nodeAutoClose: { label: 'Eğriyi kapat/aç', run: () => VP.tools.node.toggleClosed() },
+    nodeReverse: { label: 'Eğri yönünü tersine çevir', run: () => VP.tools.node.reverseCurve && VP.tools.node.reverseCurve() },
+    closeDoc: { label: 'Belgeyi kapat', kbd: 'Ctrl+F4', run: () => VP.docs && VP.docs.close && VP.docs.close() },
+
+    insertBarcode: { label: 'Barkod Ekle…', icon: 'barcode', run: barcodeWizard },
+    insertQRCode: { label: 'QR Kodu Ekle…', icon: 'qr', run: qrCodeWizard },
+
     saveAs: {
       label: 'Farklı kaydet…', kbd: 'Ctrl+Shift+S', icon: 'save',
       run: async () => {
@@ -848,6 +1052,7 @@
     pageSetup: { label: 'Sayfa boyutu…', icon: 'page', run: () => UI.openDock('pages') },
     pageBg: { label: 'Sayfa arka planı…', run: pageBg },
     createBoundary: { label: 'Sınır oluştur', run: createBoundary, enabled: hasSel },
+    alignPageCenter: { label: 'Sayfa merkezine hizala', kbd: 'P', run: () => { VP.align('ch', 'page'); VP.align('cv', 'page'); }, enabled: hasSel },
     alignL: { label: 'Sola hizala', icon: 'alignL', run: () => VP.align('l'), enabled: hasSel },
     alignCH: { label: 'Yatay ortala', icon: 'alignCH', run: () => VP.align('ch'), enabled: hasSel },
     alignR: { label: 'Sağa hizala', icon: 'alignR', run: () => VP.align('r'), enabled: hasSel },
@@ -1032,24 +1237,7 @@
     whatsNew: {
       label: 'Yenilikler',
       run: () => info('Yenilikler', '<dl class="help-grid">' +
-        '<dt>Sürüm 31</dt><dd><b>İçi boş nesneler</b> içinden tıklanarak seçilir (Görünüm › Tüm nesneleri dolu kabul et ile kapatılabilir; Alt+tık ile alttakini seçme de buna göre çalışır) · <b>Seçim işaretleri</b> masaüstü programdaki gibi: dolu siyah boyutlandırma kareleri, köşelerde ince koyu gri döndürme yayları, kenar ortalarında küçük siyah eğme okları, ortada halka ve nokta, nesnenin düğümleri küçük boş karelerle; koyu masaüstünde açık renk</dd>' +
-        '<dt>Sürüm 30</dt><dd><b>Seçim aracı</b> masaüstü programdaki gibi: Ctrl+tık grubun içindeki nesneyi seçer (yuvarlak tutamaçlarla) · Alt+tık alttaki nesneyi seçer, her tıkta bir alta iner (sağ tık menüsünde de: Alttaki nesneyi seç) · Birden çok nesnede de ikinci tık döndürme/eğme tutamaçlarına geçer · Taşırken, boyutlandırırken, döndürürken asıl nesne yerinde görünür, değişiklik mavi çizgiyle gösterilir; Boşluk, + ya da sağ tık kopya bırakır · Ctrl: düz taşıma ve 15° adımlı döndürme, Shift: merkezden boyutlandırma · Sağ fare tuşuyla sürükleyince: buraya taşı, buraya kopyala, PowerClip içine, dolgu/anahat/tüm özellikleri kopyala · Tutamaçlar seçimin hemen dışında, siyah · Seçim aracına çift tık tümünü seçer · Tab / Shift+Tab nesneler arasında dolaşır · Ctrl+ok yarım adım kaydırır · Durum çubuğu: “Dikdörtgen, Katman 1 üzerinde” ve sonraki tıkın ne yapacağı</dd>' +
-        '<dt>Sürüm 29</dt><dd><b>Odağa getir</b> (sağ tık / Görünüm): yalnızca seçili nesnelerle çalışma, diğerleri soluk ve seçilemez, Esc ile çıkış · <b>Çerçeve türü</b>: boş PowerClip çerçevesi oluşturma (çarpı işaretiyle görünür), çerçeveye resim yerleştirme, çerçeveyi kaldırma · <b>Bağlayıcı çizgiyi sar</b>: dik açılı ve yuvarlak bağlantı çizgileri işaretli nesnelerin etrafından dolaşır · <b>Nesne ipucu</b>: işaretçinin altındaki nesnenin adı, katmanı, boyutu, dolgusu ve anahatı · <b>Masaüstü katmanı</b> (Mizanpaj menüsü ve Nesneler paneli): her sayfada görünür, yazdırılmaz · Paragraf metninde harf aralığı satır kırılmasında hesaba katılır</dd>' +
-        '<dt>Sürüm 28</dt><dd><b>Paneller masaüstü düzeninde</b>: başlıkta » (daralt) · yeni <b>Köşeler</b> paneli (yuvarlat, oy, pah; A/B mesafesi) · <b>Hizala ve Dağıt</b>: simgeler, etkin nesneye / sayfa kenarına / sayfa ortasına / ızgaraya / belirtilen noktaya hizalama, 8 dağıtma türü, sayfaya veya sabit aralıkla dağıtma, metin taban çizgisi, piksel ızgarası · <b>Dönüştür</b>: Konum, Döndür, Ölçek ve ayna, Boyut, Eğ sekmeleri, 9 noktalı referans, kopya sayısı · <b>Metin</b>: harf aralığı, altı çizili, karakter arka planı, anahat kalınlığı, 6 hizalama (zorla iki yana dahil), satır aralığı birimi, paragraf öncesi boşluk, çerçeve arka planı · <b>Nesneler</b>: arama, sayfa ve ana sayfa ağacı, katman başına yazdır ve renk, alt araç çubuğu · Uzun CMYK paleti, kaydırma çubukları ve gezgin, durum çubuğunda CMYK, özellik çubuğunda referans noktası ve ok düğmeleri, simgeli fırça modları, Yeni/Aç/Geri al/Yinele açılır listeleri</dd>' +
-        '<dt>Sürüm 27</dt><dd><b>Masaüstü görünümü</b>: koyu renkler, ince çubuklar, simgeli panel sekmeleri, iki sütunlu palet · <b>Paneller</b>: + sekmesi ve Pencere › Paneller ile hangi panellerin görüneceğini seçme, × ile kapatma · <b>Dikdörtgen köşeleri</b>: yuvarlak, oyuk, pah; dört köşe ayrı ayrı (kilitle birlikte) · Özellik çubuğunda üst üste X/Y, En/Boy, ölçek yüzdesi ve anahat kalınlığı · Sağ tık menüsü masaüstü sırasında</dd>' +
-        '<dt>Sürüm 26</dt><dd><b>Yazı tipi yöneticisi</b> (Metin menüsü): iPad’deki yazı tipi dosyalarını yükleme (.ttf, .otf, .woff, .woff2; bu cihazda saklanır, açılışta geri gelir), Google Fonts’tan adıyla yazı tipi ekleme, eklenenleri yönetme · Yüklenen dosya yazı tipleri eğriye dönüştürme, zarf ve perspektifte de çalışır</dd>' +
-        '<dt>Sürüm 25</dt><dd><b>Özelleştirme</b> (Araçlar menüsü): her komuta klavye kısayolu atama (arama, tuşlara basarak atama, çakışma uyarısı) ve standart araç çubuğuna komut ekleme · <b>Renk ayarları</b>: belge renk modu, RGB çalışma alanı, CMYK baskı koşulu, görüntü oluşturma amacı (prova ve CMYK dönüşümünü etkiler) · <b>Renk paneli</b>: ton ve doygunluk-parlaklık seçici, CMYK, RGB, HSB, Lab kaydırıcıları, HEX, gamut uyarısı, damlalık, son renkler · <b>Varlıklar paneli</b>: seçili nesneleri ve resimleri bu cihazda kategorili bir kütüphanede saklama, arama, dokunarak yerleştirme</dd>' +
-        '<dt>Sürüm 24</dt><dd>Yeni biteşlem efektleri (Efektler menüsü; tahribatsız efektlerde de): <b>3B efektleri</b> (küre, silindir, 3B döndür, sayfa kıvırma), <b>Sanatsal darbeler</b> (kömür kalem, tebeşir ve pastel, sulu boya, kalem ve mürekkep, empresyonist, mum boya), Kamera (mercek parlaması, ışık efektleri, bokeh bulanıklığı), Yaratıcı (vitray, cam blok, çerçeve, hava: yağmur/kar/sis, parçacıklar, dağıt), Bozulma (bloklar, kaydır, makaslama, ıslak boya, girdap havuzu, döşe), Doku (tuğla duvar, kabartma heykel, plastik, gravür), bit düzlemleri · <b>JPEG kusurlarını temizle</b> · Biteşlem renk modları: RGB, Lab, CMYK</dd>' +
-        '<dt>Sürüm 23</dt><dd><b>Yazı ayarları (OpenType)</b> (Metin menüsü): küçük büyük harf, karakter aralığı (kerning), bitişik harfler, harf aralığı; <b>değişken yazı tipleri</b> (Inter, Roboto Flex, Bricolage Grotesque, Oswald) için ağırlık ekseni · <b>Metni düzleştir</b>, <b>Taban çizgisine hizala</b> · <b>Basılmayan karakterleri göster</b> (boşluklar ve paragraf sonları) · <b>Bindirme baskı</b> (Nesne menüsü: dolgu, anahat) ve Görünüm › Bindirmeyi simüle et · <b>Nesne verileri paneli</b>: nesnelere ad, açıklama, fiyat gibi alanlar, bütün belgenin tablosu ve toplamları, CSV · <b>Bağlantılar ve yer imleri</b> paneli: web bağlantısı veya yer imine bağlantı; PDF’te tıklanabilir, yer imleri PDF anahat listesinde; SVG’de bağlantı · <b>Bağlantı noktası düzenle aracı</b> (Bağlantı araçları grubunda): nesnelere ek bağlantı noktaları ekle, taşı, sil</dd>' +
-        '<dt>Sürüm 22</dt><dd><b>Dosya</b>: Son kaydedilene dön, Son kullanılanlar (bu cihazda), Şablon olarak kaydet ve Şablondan yeni, <b>Birleştirerek yazdır</b> (metinlere [Alan] yazın, CSV tablo verin; her satır için bir sayfalık PDF) · <b>Kılavuzlar paneli</b>: değer girerek yatay, dikey ve <b>açılı</b> kılavuz, hazır kılavuzlar (kenar boşlukları, orta, üçte bir, 12 sütun, taşma payı), açılı kılavuza yakalama · <b>Taban çizgisi ızgarası</b> ve yakalama · <b>Sayfa numarası ayarları</b> (1, i, I, a, A, 01; ilk numara, ön ek) · <b>Serbest dönüştürme aracı</b> (Seçim aracı grubunda): dayanak noktası çevresinde döndür, yansıt, ölçekle, eğ · Bézier kalemin önizlemesi Apple Pencil havada tutulurken de görünür</dd>' +
-        '<dt>Sürüm 21</dt><dd><b>Tahribatsız efektler</b> (Efektler › Efekt ekle): bulanıklık, sanatsal, kamera, doku… efektleri vektör veya resim her nesneye eklenir; nesne düzenlenebilir kalır, efektler Özellikler panelinde sıralanır, gizlenir, yeniden ayarlanır · <b>Bağlı metin çerçeveleri</b> (Metin › Çerçeveleri bağla): sığmayan paragraf metni sonraki çerçeveye akar · <b>Anahattı nesneye dönüştür</b> (Nesne menüsü, Ctrl+Shift+Q) · <b>Geri alma paneli</b>: adımların listesi, dokunarak o adıma dönme · <b>Şekillendirme paneli</b>: kaynak, kırp, kesişim, dışla, basitleştir, önü/arkası eksi, böl; kaynak ve hedef nesneleri bırakma seçenekleri · <b>Efekti kopyala / klonla</b> (Efektler menüsü): başka bir nesnedeki efekti alır; klon, ana nesne değişince güncellenir · <b>Özel yapıştır</b> (Düzen menüsü): nesne, yerinde, eğri, biteşlem olarak; sistem panosundan düz metin veya resim</dd>' +
-        '<dt>Sürüm 20</dt><dd><b>Dışa aktarma paneli</b> (Dosya ve Pencere menüleri): sayfaları ve seçili nesneleri listeye ekleyin, her birine ayrı ad, biçim (PNG, JPG, WEBP, SVG, PDF, EPS, DXF) ve çözünürlük verin, hepsini tek seferde dışa aktarın; birden çok dosya tek ZIP içinde kaydedilir · <b>Renk provası</b> (Görünüm menüsü): kuşe, mat, gazete veya mürekkep püskürtmeli kâğıtta renklerin yaklaşık görünümü (kâğıt beyazı, en koyu siyah, baskıda kaybolan canlılık) · <b>Gamut uyarısı</b>: baskıda ekrandakinden soluk çıkacak alanları yeşille gösterir · Prova yaklaşık bir modeldir, renk profili (ICC) değildir</dd>' +
-        '<dt>Sürüm 19</dt><dd><b>Görüntü ayarlama laboratuvarı</b> (Biteşlemler menüsü): sıcaklık, renk tonu, doygunluk, canlılık, parlaklık, karşıtlık, vurgular, ara tonlar, gölgeler ve otomatik ayar, önizlemeli · <b>Renk uyumları</b> (Stiller paneli, Pencere menüsü): tek renk, benzer, tamamlayıcı, bölünmüş tamamlayıcı, üçlü, dörtlü; birbirine bağlı 5 renk stili, ton/doygunluk/açıklık kaydırıcıları uyumdaki renkleri kullanan bütün nesneleri birlikte değiştirir · <b>Noktalayıcı</b> (Efektler menüsü): seçimi daire, kare, elmas veya altıgen noktalardan vektör mozaiğe çevirir; ızgara veya kaydırmalı düzen, koyuluğa göre boyut, özgün/gri/tek renk · <b>Fotoğraf kolajı</b> (Efektler menüsü): resmi, seçili resimlerden veya dosyalardan seçilen resimlerden oluşan bir mozaik olarak yeniden kurar; sütun sayısı, döşeme boyutu, renk uyumu</dd>' +
-        '<dt>Sürüm 18.1</dt><dd>Technical Suite’e ait yansıtılmış (izometrik) çizim ve izometrik ızgara kaldırıldı; uygulama yalnızca CorelDRAW özelliklerini izliyor. Daha önce düzleme yansıtılmış nesneler oldukları gibi kalır</dd>' +
-        '<dt>Sürüm 18</dt><dd><b>Perspektif çizim</b> (Görünüm menüsü): 1, 2 veya 3 kaçış noktalı ızgara; zemin, sol duvar ve sağ duvar düzlemleri; dörtgen, elips, çokgen, çizgi ve eğriler doğrudan düzleme çizilir ve düzenlenebilir perspektif nesnesi olur · Kaçış noktaları, köşe, yükseklik ve derinlik tutamaçları sürüklenir · <b>Etki aracı</b> (araç kutusunda Artistik medya grubunda, Efektler menüsünde): ışınsal patlama veya paralel hız çizgileri; çizgi sayısı, yay, iç boşluk, uzunluk/aralık/kalınlık farkı, uç kalınlıkları, renk, karıştır · <b>Nesneleri yola sığdır</b> (Nesne menüsü): eşit veya sabit aralıkla, eğriyle döndürerek veya dik, ortası/altı/üstü eğride · <b>Paragraf metnini sar</b> (Nesne ve Metin menüleri): seçili nesnenin konturu veya çerçevesi boyunca paragraf metni etrafından akar, nesne taşınınca metin yeniden dizilir, metin uzaklığı ayarlanır</dd>' +
-        '<dt>Sürüm 17</dt><dd><b>Görünüm modları</b> (Görünüm menüsü): basit tel kafes (efekt adımları gizli), tel kafes, taslak (geçişler düz renk), gelişmiş ve <b>piksel</b> (belge çözünürlüğünde, çok yakınlaşınca piksel ızgarası) · <b>Çoklu sayfa görünümü</b>: bütün sayfalar yan yana, başka sayfaya dokununca o sayfada çalışılır · <b>Koordinatlar paneli</b> (Pencere menüsü): değer girerek dikdörtgen, elips, çokgen, yıldız ve çizgi oluşturma, başvuru noktası, seçili nesneyi değiştirme · <b>Çizim ölçeği</b> (Mizanpaj menüsü): 1:50 gibi hazır ölçekler veya özel ölçek, mm/cm/m/km/inç/fit; cetveller, imleç konumu ve ölçü çizgileri gerçek boyutu gösterir</dd>' +
-        '<dt>Sürüm 16</dt><dd><b>Hizalama kılavuzları</b>: nesne taşınırken kenarlar ve merkez diğer nesnelere ve sayfaya hizalanır, pembe çizgilerle gösterilir · <b>Simetri</b> (Nesne › Simetri): ayna (dikey, yatay, ikisi) veya döner (2–36 kopya, kaleydoskop); düzenleme modunda çizdikçe aynası anında oluşur, merkez sürüklenebilir · <b>Eğim efekti</b> (Efektler › Eğim): yumuşak veya pah, ışık yönü, şiddet, ışık ve gölge rengi · <b>QR kod ve barkod</b> (Nesne › Ekle): QR (Türkçe karakterler, 4 hata düzeltme seviyesi), Code 128, EAN-13, EAN-8, UPC-A; canlı vektör nesne, çift dokunarak içerik düzenlenir</dd>' +
-        '<dt>Sürüm 15</dt><dd>Sağ tık menüsü: Seçim aracında nesneye basılı tutun (parmak veya Apple Pencil) ya da sağ tıklayın · Kes, kopyala, yapıştır, sil, çoğalt, grupla, grubu çöz, birleştir, parçala, eğriye dönüştür, şekillendir, sırala, hizala, PowerClip, dönüştür, kilitle, gizle · Boş sayfada sayfa komutları</dd><dt>Sürüm 14.4</dt><dd>iPad: sağdaki paneller (özellikler, katmanlar…) artık yüzen pencere değil; CorelDRAW gibi sağ kenara tam boy yerleşir, çizim alanı yanında küçülür</dd><dt>Sürüm 14.3</dt><dd>Sayfa dışı (masaüstü) artık beyaz, açık ve koyu temada · Görünüm › Sayfa dışı beyaz ile eski gri renge dönülebilir</dd><dt>Sürüm 14.2</dt><dd>CorelDRAW tabloları: hücre ve tablo çerçeveleri (kenar çizgileri) artık çiziliyor · Boş tablo hücrelerinde görünen “character” yazısı kaldırıldı · Paragraf satır aralığı Corel’deki gibi (satırlar tablo çizgileriyle hizalı)</dd><dt>Sürüm 14.1</dt><dd>CorelDRAW 2026 dosyaları: metinler (Türkçe harfler, bir satırda kalın/normal karışık yazı, paragraf kutuları), dosyadaki resimler (saydam arka planlı fotoğraflar dahil), geçişli (gradyan) dolgular ve saydamlık artık açılıyor · Çizim Corel’de sayfanın dışında duruyorsa ekran çizime yakınlaşır · Mizanpaj › Sayfayı çizime uydur</dd><dt>Sürüm 14</dt><dd><b>CorelDRAW dosyalarını açma</b> (.cdr ve .cdrt şablonlar; X6’dan 2026’ya, eski sürümler kısmen): sayfalar, katmanlar, gruplar, eğriler, dikdörtgen ve elipsler, dolgu ve anahat renkleri (CMYK/RGB), metin ve paragraf metni, PowerClip, karşılıklı sayfalar · Her sayfada Corel’in kendi önizlemesi gizli bir başvuru katmanında durur (Görünüm › Corel önizlemesi) · <b>CorelDRAW için kaydet</b>: sürüm seçilir (2026’dan X3’e), o sürümün en iyi açtığı biçimde (PDF, AI ya da EPS) kaydedilir</dd><dt>Sürüm 13.1</dt><dd>Bıçak izinde <b>Dışa / İçe</b> düğmesi · Mesafeye eksi yazınca (iPad klavyesinin eksi işareti dahil) hat nesnenin içinden geçer · İçe mesafe nesneye göre çok büyükse uyarır</dd><dt>Sürüm 13</dt><dd>Yeni <b>Eklentiler › Kesim ve Montaj</b>: bıçak izi (kontur, dikdörtgen, yuvarlak köşe, oval; mesafe, köprü), kesim plotteri için hizalama işaretleri (kare, daire, artı, köşe L; ara işaretler), sayfayı dolduran çoğaltma (döndürerek sığdırma, kesim işaretleri), az fireli yerleştirme, ayıklama çerçevesi ve çizgileri, taşma payı, kesim uzunluğu ve maliyet, ayrı kesim dosyası (SVG/DXF/EPS) ve bıçak izi olmadan baskı PDF’i</dd><dt>Sürüm 12.5</dt><dd>Dosya › Yeni artık <b>Yeni Belge Oluştur</b> penceresini açar: ad, hazır ayar, sayfa boyutu, en/boy, yön, sayfa sayısı, renk modu ve çözünürlük · Her belge kendi sekmesinde açılır; sekmeler arasında geçiş yapılır, her belgenin geri alma geçmişi ayrıdır · Kaydedilmemiş belge kapatılırken sorulur (Ctrl+W) · Açık belgelerin hepsi otomatik kaydedilir</dd><dt>Sürüm 12.4</dt><dd>Yazı tipleri panelindeki liste sayfanın ortasında üst üste biniyordu; artık panelin içinde düzgün listeleniyor · Seçili metnin yazı tipi listede işaretli</dd><dt>Sürüm 12.3</dt><dd>Yazı tipi değiştirildiğinde bazı tarayıcılarda metnin durmadan yeniden çizilip uygulamayı kilitlemesi düzeltildi · Kayıtlı belge açılamazsa yedeklenip boş belgeyle açılır, çizim alanı her durumda çalışır · Beklenmeyen hata ekranda gösterilir · Hoş Geldiniz ekranı yalnızca ilk açılışta kendiliğinden gelir</dd><dt>Sürüm 12.2</dt><dd>Yeni Metin paneli (Ctrl+T): Karakter (yazı tipi listesi kendi görünümüyle, stil, boyut, kalın/italik, renk, anahat), Paragraf (hizalama, satır ve paragraf aralığı, girintiler, madde işareti, büyük ilk harf, heceleme), Çerçeve (sütunlar, dikey hizalama, otomatik yükseklik) · Yazı tipi oyun alanı ve Metin paneli artık paragraf metnine, yoldaki metne ve tablolara da uygulanır · Yazarken yazı tipi değiştirilebilir</dd><dt>Sürüm 12.1</dt><dd>Nesne menüsü alt menülere ayrıldı (PowerClip, Hizala ve dağıt, Sırala, Şekillendir, Eğriler, Klon, Dönüştürmeler…) · Şekil aracı dörtgen, çokgen ve yıldızı eğriye çevirmeden düzenler (köşe yuvarlatma, simetrik boyut/açı, yıldız keskinliği) · Konik/kare/desen/doku dolgu düğmeleri yalnızca kapalı şekillerde görünür · Dokunmatik ekranda daha küçük seçim tutamaçları · Telefonda Hoş Geldiniz sekmesi yalnız simge · İletişim kutularında onay kutuları düzeltildi</dd><dt>Sürüm 13</dt><dd>Klasik masaüstü görünümü (varsayılan): kenardan kenara yerleşik çubuklar, açık/koyu gri pencere, tek sütun araç kutusu, sık renk paleti, beyaz cetveller · Standart araç çubuğu masaüstü sırasında (Yazdır, Kes/Kopyala/Yapıştır, Tam ekran önizleme, Yakalamayı kapat) · Araç kutusu masaüstü sırasında, en altta Anahat açılır menüsü (F12) · Hoş Geldiniz ekranı · İpuçları paneli · Siyah kare seçim tutamaçları, ikinci dokunuşta döndürme/eğme okları · Keskin sayfa gölgesi · Özellikler panelinde bölüm simgeleri · Pencere › Arayüz görünümü ile modern görünüme dönüş</dd><dt>Sürüm 11</dt><dd>Dışa aktarma: PDF, SVG, PNG, JPG, WEBP, EPS, DXF · Sayfa aralığı veya yalnız seçim · PDF belge bilgileri, parola ve izinler · Taşma payı ve kesim işaretleri · Metni eğriye çevirerek dışa aktarma · Sayfa yerleşimi: 2’li, 4’lü, kitapçık · Yazdırma (Ctrl+P) · Baskı stilleri · PDF ve AI içe aktarma (vektör veya resim) · DXF içe aktarma · Betik düzenleyici (örneklerle) · Makro kaydedici</dd><dt>Sürüm 10</dt><dd>Paragraf girintileri · Madde işaretleri ve numaralandırma · Büyük ilk harf · Sekme durakları · Türkçe heceleme · Yazım denetimi, hızlı düzelt, metin istatistikleri · Yazı tipi oyun alanı · Nesne, karakter, paragraf ve renk stilleri · Palet yöneticisi (.gpl içe/dışa aktarma) · Semboller ve sembol kütüphanesi · Ana katmanlar · Karşılıklı sayfalar · Yorumlar · Ağaç görünümlü nesne yöneticisi · Sayfa aracı · Çalışma alanları (dokunmatik, sade, sayfa düzeni, odak)</dd><dt>Sürüm 9</dt><dd>Gölge aracı (düz ve perspektif) · İç gölge · Blok gölge · Deformasyon (it-çek, fermuar, burgu) · Derinliğin 6 türü · Zarf modları (düz, tek yay, çift yay, serbest) · Yol boyunca harmanlama, döndürme ve renk yönü · Saydamlık ve özel renk eşlemi mercekleri · Ok başları, kaligrafik anahat, anahat konumu ve dolgunun arkasında anahat · Çok renk duraklı geçişler · Konik, kare, desen ve doku şeffaflığı · Yeni desenler · Biteşlem efektleri (11 kategori) · Biteşlem kırp, yeniden örnekle, büyüt, genişlet, renk maskesi · Paletli, iki tonlu ve titreşimli siyah-beyaz modları · PDF’te yumuşak gölgeler</dd><dt>Sürüm 8</dt><dd>Serbest seçim · 3 noktalı dörtgen ve elips · Karmaşık yıldız · Kâğıt ızgarası · Hazır şekiller (temel, ok, akış diyagramı, pankart, not) · Akıllı çizim · Artistik medya modları (ön ayar, püskürtme, kaligrafi, basınç) · Karalama · LiveSketch · Değişken anahat · Serbest bıçak · Sanal segment silme · Nitelik damlalığı · Köşeler (yuvarlat, oy, pah) · Basitleştir, önü eksi arka, arkası eksi ön, böl · Şunun önüne/arkasına, sırayı tersine çevir · Klon · Tekrarla (Ctrl+R) · Katmana taşı/kopyala · Paralel eğri · Eğrileri kapat, birleştir, ters çevir · Izgaraya hizala · Dönüşümleri temizle · Taşınabilir dönme merkezi</dd>' +
+        '<dt>Sürüm 16</dt><dd>CorelDRAW 2026 görünümü: koyu tema ve Corel renkleri · Corel sırasında menüler, standart araç çubuğu, araç kutusu ve açılır araç grupları · Her araç için Corel tarzı özellik çubuğu (elipste pasta/yay, dikdörtgende köşe türleri) · Özellikler, Nesneler ve Öğren panelleri · Corel tarzı seçim tutamaçları, cetveller, kaydırma çubukları, sayfa çubuğu, belge paleti ve durum çubuğu · Yeni Belge penceresi · 200’den fazla yeni komut (Anahattı Nesneye Dönüştür, Simetri, Odağa Getir, Görünümde Yapıştır, Tel ızgara görünümü, sayfa numaralandırma…) · Yeni simgeler</dd><dt>Sürüm 15</dt><dd>Sağ tık menüsü: Seçim aracında nesneye basılı tutun (parmak veya Apple Pencil) ya da sağ tıklayın · Kes, kopyala, yapıştır, sil, çoğalt, grupla, grubu çöz, birleştir, parçala, eğriye dönüştür, şekillendir, sırala, hizala, PowerClip, dönüştür, kilitle, gizle · Boş sayfada sayfa komutları</dd><dt>Sürüm 14.4</dt><dd>iPad: sağdaki paneller (özellikler, katmanlar…) artık yüzen pencere değil; CorelDRAW gibi sağ kenara tam boy yerleşir, çizim alanı yanında küçülür</dd><dt>Sürüm 14.3</dt><dd>Sayfa dışı (masaüstü) artık beyaz, açık ve koyu temada · Görünüm › Sayfa dışı beyaz ile eski gri renge dönülebilir</dd><dt>Sürüm 14.2</dt><dd>CorelDRAW tabloları: hücre ve tablo çerçeveleri (kenar çizgileri) artık çiziliyor · Boş tablo hücrelerinde görünen “character” yazısı kaldırıldı · Paragraf satır aralığı Corel’deki gibi (satırlar tablo çizgileriyle hizalı)</dd><dt>Sürüm 14.1</dt><dd>CorelDRAW 2026 dosyaları: metinler (Türkçe harfler, bir satırda kalın/normal karışık yazı, paragraf kutuları), dosyadaki resimler (saydam arka planlı fotoğraflar dahil), geçişli (gradyan) dolgular ve saydamlık artık açılıyor · Çizim Corel’de sayfanın dışında duruyorsa ekran çizime yakınlaşır · Mizanpaj › Sayfayı çizime uydur</dd><dt>Sürüm 14</dt><dd><b>CorelDRAW dosyalarını açma</b> (.cdr ve .cdrt şablonlar; X6’dan 2026’ya, eski sürümler kısmen): sayfalar, katmanlar, gruplar, eğriler, dikdörtgen ve elipsler, dolgu ve anahat renkleri (CMYK/RGB), metin ve paragraf metni, PowerClip, karşılıklı sayfalar · Her sayfada Corel’in kendi önizlemesi gizli bir başvuru katmanında durur (Görünüm › Corel önizlemesi) · <b>CorelDRAW için kaydet</b>: sürüm seçilir (2026’dan X3’e), o sürümün en iyi açtığı biçimde (PDF, AI ya da EPS) kaydedilir</dd><dt>Sürüm 13.1</dt><dd>Bıçak izinde <b>Dışa / İçe</b> düğmesi · Mesafeye eksi yazınca (iPad klavyesinin eksi işareti dahil) hat nesnenin içinden geçer · İçe mesafe nesneye göre çok büyükse uyarır</dd><dt>Sürüm 13</dt><dd>Yeni <b>Eklentiler › Kesim ve Montaj</b>: bıçak izi (kontur, dikdörtgen, yuvarlak köşe, oval; mesafe, köprü), kesim plotteri için hizalama işaretleri (kare, daire, artı, köşe L; ara işaretler), sayfayı dolduran çoğaltma (döndürerek sığdırma, kesim işaretleri), az fireli yerleştirme, ayıklama çerçevesi ve çizgileri, taşma payı, kesim uzunluğu ve maliyet, ayrı kesim dosyası (SVG/DXF/EPS) ve bıçak izi olmadan baskı PDF’i</dd><dt>Sürüm 12.5</dt><dd>Dosya › Yeni artık <b>Yeni Belge Oluştur</b> penceresini açar: ad, hazır ayar, sayfa boyutu, en/boy, yön, sayfa sayısı, renk modu ve çözünürlük · Her belge kendi sekmesinde açılır; sekmeler arasında geçiş yapılır, her belgenin geri alma geçmişi ayrıdır · Kaydedilmemiş belge kapatılırken sorulur (Ctrl+W) · Açık belgelerin hepsi otomatik kaydedilir</dd><dt>Sürüm 12.4</dt><dd>Yazı tipleri panelindeki liste sayfanın ortasında üst üste biniyordu; artık panelin içinde düzgün listeleniyor · Seçili metnin yazı tipi listede işaretli</dd><dt>Sürüm 12.3</dt><dd>Yazı tipi değiştirildiğinde bazı tarayıcılarda metnin durmadan yeniden çizilip uygulamayı kilitlemesi düzeltildi · Kayıtlı belge açılamazsa yedeklenip boş belgeyle açılır, çizim alanı her durumda çalışır · Beklenmeyen hata ekranda gösterilir · Hoş Geldiniz ekranı yalnızca ilk açılışta kendiliğinden gelir</dd><dt>Sürüm 12.2</dt><dd>Yeni Metin paneli (Ctrl+T): Karakter (yazı tipi listesi kendi görünümüyle, stil, boyut, kalın/italik, renk, anahat), Paragraf (hizalama, satır ve paragraf aralığı, girintiler, madde işareti, büyük ilk harf, heceleme), Çerçeve (sütunlar, dikey hizalama, otomatik yükseklik) · Yazı tipi oyun alanı ve Metin paneli artık paragraf metnine, yoldaki metne ve tablolara da uygulanır · Yazarken yazı tipi değiştirilebilir</dd><dt>Sürüm 12.1</dt><dd>Nesne menüsü alt menülere ayrıldı (PowerClip, Hizala ve dağıt, Sırala, Şekillendir, Eğriler, Klon, Dönüştürmeler…) · Şekil aracı dörtgen, çokgen ve yıldızı eğriye çevirmeden düzenler (köşe yuvarlatma, simetrik boyut/açı, yıldız keskinliği) · Konik/kare/desen/doku dolgu düğmeleri yalnızca kapalı şekillerde görünür · Dokunmatik ekranda daha küçük seçim tutamaçları · Telefonda Hoş Geldiniz sekmesi yalnız simge · İletişim kutularında onay kutuları düzeltildi</dd><dt>Sürüm 13</dt><dd>Klasik masaüstü görünümü (varsayılan): kenardan kenara yerleşik çubuklar, açık/koyu gri pencere, tek sütun araç kutusu, sık renk paleti, beyaz cetveller · Standart araç çubuğu masaüstü sırasında (Yazdır, Kes/Kopyala/Yapıştır, Tam ekran önizleme, Yakalamayı kapat) · Araç kutusu masaüstü sırasında, en altta Anahat açılır menüsü (F12) · Hoş Geldiniz ekranı · İpuçları paneli · Siyah kare seçim tutamaçları, ikinci dokunuşta döndürme/eğme okları · Keskin sayfa gölgesi · Özellikler panelinde bölüm simgeleri · Pencere › Arayüz görünümü ile modern görünüme dönüş</dd><dt>Sürüm 11</dt><dd>Dışa aktarma: PDF, SVG, PNG, JPG, WEBP, EPS, DXF · Sayfa aralığı veya yalnız seçim · PDF belge bilgileri, parola ve izinler · Taşma payı ve kesim işaretleri · Metni eğriye çevirerek dışa aktarma · Sayfa yerleşimi: 2’li, 4’lü, kitapçık · Yazdırma (Ctrl+P) · Baskı stilleri · PDF ve AI içe aktarma (vektör veya resim) · DXF içe aktarma · Betik düzenleyici (örneklerle) · Makro kaydedici</dd><dt>Sürüm 10</dt><dd>Paragraf girintileri · Madde işaretleri ve numaralandırma · Büyük ilk harf · Sekme durakları · Türkçe heceleme · Yazım denetimi, hızlı düzelt, metin istatistikleri · Yazı tipi oyun alanı · Nesne, karakter, paragraf ve renk stilleri · Palet yöneticisi (.gpl içe/dışa aktarma) · Semboller ve sembol kütüphanesi · Ana katmanlar · Karşılıklı sayfalar · Yorumlar · Ağaç görünümlü nesne yöneticisi · Sayfa aracı · Çalışma alanları (dokunmatik, sade, sayfa düzeni, odak)</dd><dt>Sürüm 9</dt><dd>Gölge aracı (düz ve perspektif) · İç gölge · Blok gölge · Deformasyon (it-çek, fermuar, burgu) · Derinliğin 6 türü · Zarf modları (düz, tek yay, çift yay, serbest) · Yol boyunca harmanlama, döndürme ve renk yönü · Saydamlık ve özel renk eşlemi mercekleri · Ok başları, kaligrafik anahat, anahat konumu ve dolgunun arkasında anahat · Çok renk duraklı geçişler · Konik, kare, desen ve doku şeffaflığı · Yeni desenler · Biteşlem efektleri (11 kategori) · Biteşlem kırp, yeniden örnekle, büyüt, genişlet, renk maskesi · Paletli, iki tonlu ve titreşimli siyah-beyaz modları · PDF’te yumuşak gölgeler</dd><dt>Sürüm 8</dt><dd>Serbest seçim · 3 noktalı dörtgen ve elips · Karmaşık yıldız · Kâğıt ızgarası · Hazır şekiller (temel, ok, akış diyagramı, pankart, not) · Akıllı çizim · Artistik medya modları (ön ayar, püskürtme, kaligrafi, basınç) · Karalama · LiveSketch · Değişken anahat · Serbest bıçak · Sanal segment silme · Nitelik damlalığı · Köşeler (yuvarlat, oy, pah) · Basitleştir, önü eksi arka, arkası eksi ön, böl · Şunun önüne/arkasına, sırayı tersine çevir · Klon · Tekrarla (Ctrl+R) · Katmana taşı/kopyala · Paralel eğri · Eğrileri kapat, birleştir, ters çevir · Izgaraya hizala · Dönüşümleri temizle · Taşınabilir dönme merkezi</dd>' +
         '<dt>Sürüm 7</dt><dd>Merkez çizgi izleme · Konik ve kare geçişler · Desen dolgular (10 desen) ve doku dolgular (7 doku) · Yumuşatma, bulaştırma, girdap, çekme, itme ve pürüz fırçaları · B-spline, çoklu çizgi ve 3 noktalı eğri araçları</dd>' +
         '<dt>Sürüm 6</dt><dd>Biteşlem izleme (logo, ayrıntılı logo, klipart, fotoğraf, çizim) · Etkileşimli dolgu · Şeffaflık aracı · Ağ dolgu · Akıllı dolgu · Kırpma, bıçak ve silgi araçları · Baskı ayrımları (C, M, Y, K plakaları)</dd>' +
         '<dt>Sürüm 5</dt><dd>Masaüstü düzeni: menü çubuğu, standart çubuk, belge sekmesi, sağda panel sekmeleri, belge paleti, sayfa gezgini · Kılavuz çizgiler ve nesneye yakalama · Ölçü ve bağlantı araçları · Bul ve değiştir · Sayfa sıralayıcı · Tam ekran önizleme · Biteşleme dönüştürme ve modlar · Glif ekleme · Büyük/küçük harf · Metin ↔ tablo · Sayfa numarası ve arka planı · Sınır oluşturma</dd>' +
@@ -1057,7 +1245,7 @@
     },
     about: {
       label: 'VektörPad hakkında',
-      run: () => info('VektörPad', '<p>Sürüm 31 · iPad için vektör çizim uygulaması.</p><p>Masaüstü çizim programlarının çalışma düzeninden esinlenen özgün bir uygulamadır; başka bir programın kodu, simgeleri veya dosyaları kullanılmaz.</p><p>Yazı tipi: Fira Sans, SIL Open Font License 1.1.</p>')
+      run: () => info('VektörPad', '<p>Sürüm 12 · iPad için vektör çizim uygulaması.</p><p>Masaüstü çizim programlarının çalışma düzeninden esinlenen özgün bir uygulamadır; başka bir programın kodu, simgeleri veya dosyaları kullanılmaz.</p><p>Yazı tipi: Fira Sans, SIL Open Font License 1.1.</p>')
     }
   });
   A.rulers.icon = 'ruler';

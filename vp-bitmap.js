@@ -636,7 +636,7 @@
     };
     const presetSel = '<label class="field"><span>Tür</span><select id="tr-preset">' + Object.keys(B.PRESETS).map((k) => '<option value="' + k + '"' + (k === st.preset ? ' selected' : '') + '>' + esc(B.PRESETS[k].label) + '</option>').join('') + '</select></label>';
     const md = UI.modal(
-      '<h2>Biteşlemi izle</h2>' +
+      '<h2>PowerTRACE · Vektörleştirme Laboratuvarı</h2>' +
         '<div class="row">' + presetSel + '</div>' +
         '<label class="range"><span class="pb-label">Renk</span><input type="range" id="tr-colors" min="2" max="32" value="' + st.colors + '"><output>' + st.colors + '</output></label>' +
         '<label class="range"><span class="pb-label">Ayrıntı</span><input type="range" id="tr-detail" min="1" max="10" value="6"><output>6</output></label>' +
@@ -864,11 +864,11 @@
   B.separationsPDF = (dpi) => sepPDF(B.separate(dpi || 300));
 
   Object.assign(A, {
-    traceOutline: { label: 'Anahat izleme…', icon: 'bitmap', run: quickTrace(null), enabled: () => VP.sel.some((it) => it instanceof paper.Raster) },
-    traceQuick: { label: 'Hızlı izleme', run: quickTrace('quick'), enabled: () => VP.sel.some((it) => it instanceof paper.Raster) },
+    traceOutline: { label: 'PowerTRACE (Yüzeysel Vektörleştirme)…', icon: 'bitmap', run: quickTrace(null), enabled: () => VP.sel.some((it) => it instanceof paper.Raster) },
+    traceQuick: { label: 'Hızlı Vektörleştirme (Quick Trace)', run: quickTrace('quick'), enabled: () => VP.sel.some((it) => it instanceof paper.Raster) },
     traceLogo: { label: 'Logo olarak izle', run: quickTrace('logo'), enabled: () => VP.sel.some((it) => it instanceof paper.Raster) },
     traceLine: { label: 'Çizim olarak izle (siyah-beyaz)', run: quickTrace('line'), enabled: () => VP.sel.some((it) => it instanceof paper.Raster) },
-    traceCenter: { label: 'Merkez çizgi izleme…', icon: 'bitmap', run: quickTrace('centerTech', true), enabled: () => VP.sel.some((it) => it instanceof paper.Raster) },
+    traceCenter: { label: 'Merkez Çizgi Vektörleştirme (Centerline Trace)…', icon: 'bitmap', run: quickTrace('centerTech', true), enabled: () => VP.sel.some((it) => it instanceof paper.Raster) },
     separations: { label: 'Baskı ayrımları…', icon: 'layers', run: separations }
   });
   // a selected bitmap offers tracing right on the property bar

@@ -303,7 +303,7 @@
       const freeW = ln.right - ln.width;
       if (fx.align === 'center' && !ln.tabbed) shift = freeW / 2;
       else if (fx.align === 'right' && !ln.tabbed) shift = freeW;
-      else if (((fx.align === 'justify' && !ln.last) || fx.align === 'force') && pcs.length - start > 1) extra = freeW / (pcs.length - start - 1);
+      else if (fx.align === 'justify' && !ln.last && pcs.length - start > 1) extra = freeW / (pcs.length - start - 1);
       if (extra) {
         pcs.forEach((p, k) => g.addChild(makeText(fx.font, look, p.t, Pt(x0 + p.x + Math.max(0, k - start) * extra * (k >= start ? 1 : 0), base))));
         return;

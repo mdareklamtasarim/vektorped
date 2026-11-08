@@ -1,0 +1,187 @@
+/* VektörPad, CorelDRAW 2026 look: tools part (toolbox, flyouts, tooltips, property bar). Classic skin only. */
+
+/* ================= toolbox ================= */
+html[data-skin="classic"] #toolbox.ct-tb {
+  display: flex; flex-direction: column; align-items: center; gap: 1px;
+  width: 36px; padding: 3px 0; overflow-x: hidden; overflow-y: auto;
+  background: var(--panel); border: 0; border-right: 1px solid var(--cd-sep, var(--line)); border-radius: 0;
+}
+html[data-skin="classic"] #toolbox.ct-tb .ct-tool {
+  position: relative; display: grid; place-items: center; flex: none;
+  width: 30px; height: 28px; margin: 0; padding: 0; border: 1px solid transparent; border-radius: 3px;
+  background: transparent; color: var(--fg); cursor: default; touch-action: manipulation;
+  -webkit-user-select: none; user-select: none; -webkit-touch-callout: none;
+}
+html[data-skin="classic"] #toolbox.ct-tb .ct-tool svg.i { width: 20px; height: 20px; pointer-events: none; }
+html[data-skin="classic"] #toolbox.ct-tb .ct-tool:hover { background: var(--cd-hover, var(--panel-2)); }
+html[data-skin="classic"] #toolbox.ct-tb .ct-tool.on,
+html[data-skin="classic"] #toolbox.ct-tb .ct-tool.on:hover { background: var(--cd-on, var(--accent-soft)); border-color: color-mix(in srgb, var(--cd-on, #1e4670) 70%, #8fb3d9); color: var(--cd-on-fg, var(--fg)); }
+html[data-skin="classic"] #toolbox.ct-tb .ct-tool:focus-visible { outline: 1px solid var(--accent); outline-offset: -1px; }
+/* flyout marker: small triangle in the bottom-right corner */
+html[data-skin="classic"] #toolbox.ct-tb .ct-mark {
+  position: absolute; right: 1px; bottom: 1px; width: 0; height: 0;
+  border-left: 4px solid transparent; border-bottom: 4px solid currentColor; opacity: 0.85; pointer-events: none;
+}
+html[data-skin="classic"] #toolbox.ct-tb .ct-sep { flex: none; width: 22px; height: 1px; margin: 4px 0; background: var(--cd-sep, var(--line)); }
+html[data-skin="classic"] #toolbox.ct-tb .ct-custom { margin-top: 1px; }
+html[data-skin="classic"] #toolbox.ct-tb.ct-tight .ct-tool { height: 26px; }
+html[data-skin="classic"] #toolbox.ct-tb.ct-tight .ct-sep { margin: 2px 0; }
+html[data-skin="classic"] #toolbox.ct-tb.ct-tighter .ct-tool { height: 24px; }
+html[data-skin="classic"] #toolbox.ct-tb.ct-tighter .ct-sep { margin: 1px 0; }
+@media (pointer: coarse) {
+  html[data-skin="classic"] #toolbox.ct-tb { width: 42px; }
+  html[data-skin="classic"] #toolbox.ct-tb .ct-tool { width: 38px; height: 36px; }
+  html[data-skin="classic"] #toolbox.ct-tb .ct-tool svg.i { width: 22px; height: 22px; }
+  html[data-skin="classic"] #toolbox.ct-tb .ct-mark { right: 2px; bottom: 2px; border-left-width: 6px; border-bottom-width: 6px; }
+  html[data-skin="classic"] #toolbox.ct-tb.ct-tight .ct-tool { height: 34px; }
+  html[data-skin="classic"] #toolbox.ct-tb.ct-tighter .ct-tool { height: 32px; }
+}
+/* phones: the toolbox is a horizontal strip */
+@media (max-width: 640px) {
+  html[data-skin="classic"] #toolbox.ct-tb { flex-direction: row; width: auto; height: auto; padding: 2px 4px; overflow-x: auto; overflow-y: hidden; border-right: 0; border-bottom: 1px solid var(--cd-sep, var(--line)); }
+  html[data-skin="classic"] #toolbox.ct-tb .ct-sep { width: 1px; height: 22px; margin: 0 3px; }
+}
+
+/* flyout: list beside the toolbox with icon, name and shortcut */
+html[data-skin="classic"] .popover.ct-fly,
+html[data-skin="classic"] .popover.ct-list { padding: 3px 0; min-width: 0; border-radius: 0; background: var(--cd-popup, var(--panel)); box-shadow: var(--shadow); }
+html[data-skin="classic"] .popover.ct-fly .pop-item,
+html[data-skin="classic"] .popover.ct-list .pop-item {
+  display: flex; align-items: center; gap: 8px; width: 100%; min-height: 24px; padding: 2px 14px 2px 8px;
+  border: 0; border-radius: 0; background: transparent; color: var(--fg); font-size: 12px; text-align: left; white-space: nowrap;
+}
+html[data-skin="classic"] .popover.ct-fly .pop-item svg.i { width: 18px; height: 18px; }
+html[data-skin="classic"] .popover.ct-fly .pop-item:hover,
+html[data-skin="classic"] .popover.ct-list .pop-item:hover { background: var(--cd-hover, var(--panel-2)); }
+html[data-skin="classic"] .popover.ct-fly .pop-item.on { background: var(--cd-on, var(--accent-soft)); color: var(--cd-on-fg, var(--fg)); }
+html[data-skin="classic"] .popover.ct-fly .ct-fi-l,
+html[data-skin="classic"] .popover.ct-list .ct-fi-l { flex: 1; }
+html[data-skin="classic"] .popover.ct-fly .kbd { margin-left: 18px; color: var(--muted); font-size: 11.5px; background: none; border: 0; padding: 0; }
+html[data-skin="classic"] .popover.ct-fly .ct-check { display: inline-block; width: 12px; text-align: center; }
+html[data-skin="classic"] .popover.ct-fly .pop-sep,
+html[data-skin="classic"] .popover.ct-list .pop-sep { height: 1px; margin: 3px 0; background: var(--cd-popup-sep, var(--line)); }
+html[data-skin="classic"] .popover.ct-list .ct-dash { color: var(--fg); }
+@media (pointer: coarse) {
+  html[data-skin="classic"] .popover.ct-fly .pop-item,
+  html[data-skin="classic"] .popover.ct-list .pop-item { min-height: 40px; font-size: 13px; }
+}
+
+/* tooltip: bold "Name (Shortcut)" then the description */
+.ct-tip {
+  position: fixed; z-index: 1000; max-width: 300px; padding: 5px 8px 6px; pointer-events: none;
+  background: var(--cd-popup, var(--panel)); color: var(--fg); border: 1px solid var(--cd-field-line, var(--line));
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35); font-size: 12px; line-height: 1.4;
+}
+.ct-tip b { display: block; font-weight: 600; }
+.ct-tip span { display: block; }
+
+/* ================= property bar ================= */
+html[data-skin="classic"] #propbar.ct-pb { align-items: center; gap: 2px; min-height: 44px; padding: 1px 4px; }
+html[data-skin="classic"] #propbar.ct-pb .ct-sep { flex: none; align-self: stretch; width: 1px; margin: 7px 4px; background: var(--cd-sep, var(--line)); }
+html[data-skin="classic"] #propbar.ct-pb svg.i { width: 16px; height: 16px; }
+html[data-skin="classic"] #propbar.ct-pb .ct-stack { display: inline-flex; flex-direction: column; justify-content: center; gap: 2px; flex: none; }
+html[data-skin="classic"] #propbar.ct-pb .ct-num { display: inline-flex; align-items: center; gap: 3px; flex: none; height: 19px; }
+html[data-skin="classic"] #propbar.ct-pb .ct-nic { display: inline-grid; place-items: center; width: 18px; color: var(--fg); }
+html[data-skin="classic"] #propbar.ct-pb .ct-nlab, html[data-skin="classic"] #propbar.ct-pb .ct-lab { color: var(--fg); font-size: 12px; padding: 0 2px; white-space: nowrap; }
+html[data-skin="classic"] #propbar.ct-pb .ct-nbox {
+  display: inline-flex; align-items: center; height: 19px; padding: 0 4px 0 3px;
+  background: var(--cd-field, var(--panel-2)); border: 1px solid var(--cd-field-line, var(--line)); border-radius: 2px;
+}
+html[data-skin="classic"] #propbar.ct-pb .ct-nbox:focus-within { border-color: var(--accent); }
+html[data-skin="classic"] #propbar.ct-pb .ct-nbox input {
+  width: var(--w, 60px); min-width: 0; height: 100%; padding: 0; border: 0; outline: none; background: transparent;
+  color: var(--fg); font: 12px var(--font-num); font-variant-numeric: tabular-nums; -webkit-user-select: text; user-select: text;
+}
+html[data-skin="classic"] #propbar.ct-pb .ct-unit { padding-left: 2px; color: var(--fg); font-size: 12px; }
+html[data-skin="classic"] #propbar.ct-pb .ct-num.dis { opacity: 0.45; }
+html[data-skin="classic"] #propbar.ct-pb .ct-num.dis .ct-nbox { background: transparent; }
+/* spin arrows "˅ ˄" side by side, or stacked for the nudge box */
+html[data-skin="classic"] #propbar.ct-pb .ct-spin { display: inline-flex; flex: none; }
+html[data-skin="classic"] #propbar.ct-pb .ct-spin.v { flex-direction: column; }
+html[data-skin="classic"] #propbar.ct-pb .ct-spin button { display: grid; place-items: center; width: 14px; height: 19px; padding: 0; border: 0; background: transparent; color: var(--fg); border-radius: 2px; }
+html[data-skin="classic"] #propbar.ct-pb .ct-spin.v button { height: 10px; }
+html[data-skin="classic"] #propbar.ct-pb .ct-spin button:hover:not(:disabled) { background: var(--cd-hover, var(--panel-2)); }
+html[data-skin="classic"] #propbar.ct-pb .ct-spin button:disabled { opacity: 0.4; }
+html[data-skin="classic"] #propbar.ct-pb svg.ct-chev,
+html[data-skin="classic"] .popover svg.ct-chev { width: 9px; height: 9px; fill: none; stroke: currentColor; stroke-width: 1.4; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+html[data-skin="classic"] #propbar.ct-pb .ct-num:has(.ct-spin.v) { height: 22px; }
+/* icon buttons and toggles */
+html[data-skin="classic"] #propbar.ct-pb .ct-ib {
+  display: inline-grid; place-items: center; flex: none; width: 26px; height: 26px; padding: 0;
+  border: 1px solid transparent; border-radius: 2px; background: transparent; color: var(--fg);
+}
+html[data-skin="classic"] #propbar.ct-pb .ct-ib:hover:not(:disabled) { background: var(--cd-hover, var(--panel-2)); }
+html[data-skin="classic"] #propbar.ct-pb .ct-ib.on { background: var(--cd-on, var(--accent-soft)); color: var(--cd-on-fg, var(--fg)); }
+html[data-skin="classic"] #propbar.ct-pb .ct-ib:disabled { opacity: 0.35; }
+html[data-skin="classic"] #propbar.ct-pb .ct-glyph { font: 600 13px var(--font-ui); font-style: normal; }
+html[data-skin="classic"] #propbar.ct-pb i.ct-glyph { font-style: italic; font-family: Georgia, serif; }
+html[data-skin="classic"] #propbar.ct-pb .ct-plus { margin-left: auto; }
+html[data-skin="classic"] #propbar.ct-pb .ct-plus svg.i { width: 18px; height: 18px; }
+/* reference point (object origin): 3×3 grid of small squares */
+html[data-skin="classic"] #propbar.ct-pb .ct-anchor { display: inline-grid; grid-template-columns: repeat(3, 8px); grid-auto-rows: 8px; gap: 2px; flex: none; margin: 0 4px 0 2px; }
+html[data-skin="classic"] #propbar.ct-pb .ct-anchor button { width: 8px; height: 8px; padding: 0; border: 1px solid var(--fg); border-radius: 0; background: transparent; opacity: 0.8; }
+html[data-skin="classic"] #propbar.ct-pb .ct-anchor button.on { background: var(--fg); opacity: 1; }
+html[data-skin="classic"] #propbar.ct-pb .ct-anchor.dis { opacity: 0.4; }
+html[data-skin="classic"] .popover .ct-anchor.big { display: grid; grid-template-columns: repeat(3, 40px); grid-auto-rows: 40px; gap: 6px; padding: 8px; }
+html[data-skin="classic"] .popover .ct-anchor.big button { border: 2px solid var(--fg); border-radius: 2px; background: transparent; }
+html[data-skin="classic"] .popover .ct-anchor.big button.on { background: var(--fg); }
+/* combo boxes: outline width, line style, font, size, zoom, page size, units */
+html[data-skin="classic"] #propbar.ct-pb .ct-ow { display: inline-flex; align-items: center; gap: 3px; flex: none; }
+html[data-skin="classic"] #propbar.ct-pb .ct-ow .ct-nbox { border-right: 0; border-radius: 2px 0 0 2px; height: 24px; }
+html[data-skin="classic"] #propbar.ct-pb .ct-ow input { width: 62px; }
+html[data-skin="classic"] #propbar.ct-pb .ct-fs input { width: 46px; }
+html[data-skin="classic"] #propbar.ct-pb .ct-drop {
+  display: grid; place-items: center; width: 18px; height: 24px; margin-left: -3px; padding: 0;
+  background: var(--cd-field, var(--panel-2)); border: 1px solid var(--cd-field-line, var(--line)); border-left: 0; border-radius: 0 2px 2px 0; color: var(--fg);
+}
+html[data-skin="classic"] #propbar.ct-pb .ct-combo,
+html[data-skin="classic"] #propbar.ct-pb .ct-sel {
+  position: relative; display: inline-flex; align-items: center; flex: none; gap: 4px; height: 24px; padding: 0 5px 0 6px;
+  width: var(--w, auto); background: var(--cd-field, var(--panel-2)); border: 1px solid var(--cd-field-line, var(--line)); border-radius: 2px; color: var(--fg);
+}
+html[data-skin="classic"] #propbar.ct-pb .ct-combo:disabled { opacity: 0.4; }
+html[data-skin="classic"] #propbar.ct-pb .ct-cv { flex: 1; display: inline-flex; align-items: center; min-width: 0; overflow: hidden; }
+html[data-skin="classic"] #propbar.ct-pb .ct-sel select {
+  position: absolute; inset: 0; width: 100%; height: 100%; padding: 0 20px 0 6px; border: 0; outline: none; background: transparent;
+  color: var(--fg); font: 12px var(--font-ui); -webkit-appearance: none; appearance: none;
+}
+html[data-skin="classic"] #propbar.ct-pb .ct-sel select option { background: var(--cd-popup, var(--panel)); color: var(--fg); }
+html[data-skin="classic"] #propbar.ct-pb .ct-sel .ct-chev { position: absolute; right: 5px; top: 50%; margin-top: -4.5px; pointer-events: none; }
+html[data-skin="classic"] #propbar.ct-pb .ct-range { display: inline-flex; align-items: center; gap: 4px; flex: none; }
+html[data-skin="classic"] #propbar.ct-pb .ct-range input { width: 90px; accent-color: var(--accent); }
+html[data-skin="classic"] #propbar.ct-pb .ct-range output { min-width: 18px; font-size: 12px; color: var(--fg); }
+
+/* the app's own bars for the other tools, drawn in the same flat style */
+html[data-skin="classic"] #propbar.ct-pb.ct-own .pb-sep { margin: 7px 4px; background: var(--cd-sep, var(--line)); }
+html[data-skin="classic"] #propbar.ct-pb.ct-own .pb-title { font-weight: 600; padding: 0 6px 0 4px; }
+html[data-skin="classic"] #propbar.ct-pb.ct-own .field { height: 24px; border-radius: 2px; background: var(--cd-field, var(--panel-2)); border-color: var(--cd-field-line, var(--line)); }
+html[data-skin="classic"] #propbar.ct-pb.ct-own .btn { height: 26px; border-radius: 2px; border-color: transparent; background: transparent; }
+html[data-skin="classic"] #propbar.ct-pb.ct-own .btn:hover { background: var(--cd-hover, var(--panel-2)); }
+html[data-skin="classic"] #propbar.ct-pb.ct-own .btn.on { background: var(--cd-on, var(--accent-soft)); color: var(--cd-on-fg, var(--fg)); border-color: transparent; }
+html[data-skin="classic"] #propbar.ct-pb.ct-own .btn.primary { background: var(--accent); color: var(--accent-fg); }
+html[data-skin="classic"] #propbar.ct-pb.ct-own .seg { border-radius: 2px; border-color: var(--cd-field-line, var(--line)); }
+html[data-skin="classic"] #propbar.ct-pb.ct-own .seg button { height: 24px; background: transparent; }
+html[data-skin="classic"] #propbar.ct-pb.ct-own .seg button.on { background: var(--cd-on, var(--accent-soft)); color: var(--cd-on-fg, var(--fg)); }
+
+/* touch: no stacked fields (each control gets a ~36 px hit area), the bar scrolls sideways */
+@media (pointer: coarse) {
+  html[data-skin="classic"] #propbar.ct-pb { min-height: 48px; gap: 4px; }
+  html[data-skin="classic"] #propbar.ct-pb .ct-stack { flex-direction: row; gap: 6px; }
+  html[data-skin="classic"] #propbar.ct-pb .ct-num,
+  html[data-skin="classic"] #propbar.ct-pb .ct-nbox,
+  html[data-skin="classic"] #propbar.ct-pb .ct-ow .ct-nbox,
+  html[data-skin="classic"] #propbar.ct-pb .ct-drop,
+  html[data-skin="classic"] #propbar.ct-pb .ct-combo,
+  html[data-skin="classic"] #propbar.ct-pb .ct-sel { height: 36px; }
+  html[data-skin="classic"] #propbar.ct-pb .ct-nbox input { font-size: 14px; }
+  html[data-skin="classic"] #propbar.ct-pb .ct-spin button { width: 26px; height: 36px; }
+  html[data-skin="classic"] #propbar.ct-pb .ct-spin.v button { height: 18px; }
+  html[data-skin="classic"] #propbar.ct-pb .ct-num:has(.ct-spin.v) { height: 36px; }
+  html[data-skin="classic"] #propbar.ct-pb .ct-drop { width: 30px; }
+  html[data-skin="classic"] #propbar.ct-pb .ct-ib { width: 36px; height: 36px; }
+  html[data-skin="classic"] #propbar.ct-pb .ct-anchor { grid-template-columns: repeat(3, 10px); grid-auto-rows: 10px; padding: 3px; }
+  html[data-skin="classic"] #propbar.ct-pb .ct-anchor button { width: 10px; height: 10px; }
+  html[data-skin="classic"] #propbar.ct-pb.ct-own .field,
+  html[data-skin="classic"] #propbar.ct-pb.ct-own .btn,
+  html[data-skin="classic"] #propbar.ct-pb.ct-own .seg button { height: 36px; }
+}

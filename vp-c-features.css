@@ -1,0 +1,33 @@
+/* VektörPad, CorelDRAW 2026 look: features part (focus mode bar, object hints, small dialogs). */
+
+/* focus mode ("Odağa Getir"): a bar across the top of the drawing window */
+#c-focus-bar {
+  position: absolute; left: 50%; top: 6px; transform: translateX(-50%); z-index: 30;
+  display: flex; align-items: center; gap: 10px; padding: 4px 6px 4px 12px;
+  background: #274d76; color: #fff; font-size: 12px; border-radius: 2px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35); max-width: calc(100% - 24px); white-space: nowrap;
+}
+#c-focus-bar span { overflow: hidden; text-overflow: ellipsis; }
+#c-focus-bar .btn { min-height: 24px; padding: 2px 10px; font-size: 12px; background: #1e3d5e; color: #fff; border: 1px solid #4a74a0; border-radius: 2px; }
+#c-focus-bar .btn:hover { background: #34577d; }
+@media (pointer: coarse) { #c-focus-bar .btn { min-height: 36px; } }
+
+/* object hints ("Nesne İpuçları") */
+.c-objtip {
+  position: fixed; z-index: 9000; pointer-events: none; display: flex; flex-direction: column; gap: 1px;
+  padding: 5px 8px; max-width: 240px; font-size: 11px; line-height: 1.35;
+  background: #fffff0; color: #1d1d1b; border: 1px solid #8c8c8c; box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+}
+html[data-theme="dark"] .c-objtip { background: #2c2c2c; color: #d8d8d8; border-color: #555; }
+.c-objtip b { font-weight: 600; }
+.c-objtip[hidden] { display: none; }
+
+/* dialogs of this part */
+.c-dlg { display: flex; flex-direction: column; gap: 6px; margin: 4px 0 8px; }
+.c-dlg .field.wide { display: flex; align-items: center; gap: 8px; }
+.c-dlg .field.wide > span:first-child { min-width: 150px; text-transform: none; }
+.c-chk { display: flex; align-items: center; gap: 8px; cursor: pointer; }
+.c-chk span { text-transform: none; }
+.c-chk input { width: 18px; height: 18px; }
+.c-list { display: flex; flex-direction: column; max-height: 50vh; overflow: auto; margin: 6px 0 10px; border: 1px solid var(--line, #3a3a3a); }
+.c-list .pop-item { width: 100%; }

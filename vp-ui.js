@@ -278,9 +278,58 @@
       },
       enabled: () => VP.sel.length === 2
     },
+    pcEdit: {
+      label: 'PowerClip’i düzenle',
+      icon: 'editText',
+      run: () => {
+        const pc = VP.sel.find((it) => VP.fx && VP.fx.of && VP.fx.of(it) && VP.fx.of(it).type === 'powerclip');
+        if (pc) VP.fx.pcEdit(pc);
+      },
+      enabled: () => VP.sel.some((it) => VP.fx && VP.fx.of && VP.fx.of(it) && VP.fx.of(it).type === 'powerclip')
+    },
+    pcFinish: {
+      label: 'PowerClip düzenlemeyi bitir',
+      icon: 'ok',
+      run: () => {
+        if (VP.fx && VP.fx.pcFinish) VP.fx.pcFinish();
+      },
+      enabled: () => !!(VP.cFocus && VP.cFocus.isEditingPC)
+    },
+    pcSelectContent: {
+      label: 'PowerClip içeriğini seç',
+      icon: 'select',
+      run: () => {
+        const pc = VP.sel.find((it) => VP.fx && VP.fx.of && VP.fx.of(it) && VP.fx.of(it).type === 'powerclip');
+        if (pc) VP.fx.pcSelectContent(pc);
+      },
+      enabled: () => VP.sel.some((it) => VP.fx && VP.fx.of && VP.fx.of(it) && VP.fx.of(it).type === 'powerclip')
+    },
+    pcExtract: {
+      label: 'İçeriği çıkar',
+      icon: 'ungroup',
+      run: () => {
+        const pc = VP.sel.find((it) => VP.fx && VP.fx.of && VP.fx.of(it) && VP.fx.of(it).type === 'powerclip');
+        if (pc) VP.fx.pcExtract(pc);
+      },
+      enabled: () => VP.sel.some((it) => VP.fx && VP.fx.of && VP.fx.of(it) && VP.fx.of(it).type === 'powerclip')
+    },
+    pcLockToggle: {
+      label: 'İçeriği PowerClip’e kilitle',
+      icon: 'lock',
+      run: () => {
+        const pc = VP.sel.find((it) => VP.fx && VP.fx.of && VP.fx.of(it) && VP.fx.of(it).type === 'powerclip');
+        if (pc) {
+          pc.data.effect.lock = pc.data.effect.lock === false;
+          VP.toast(pc.data.effect.lock ? 'İçerik PowerClip’e kilitlendi' : 'İçerik kilidi açıldı');
+          UI.renderPropbar();
+        }
+      },
+      enabled: () => VP.sel.some((it) => VP.fx && VP.fx.of && VP.fx.of(it) && VP.fx.of(it).type === 'powerclip')
+    },
     pcCenter: { label: 'İçeriği ortala', run: () => VP.fx.pcArrange(VP.sel[0], 'center') },
     pcFit: { label: 'İçeriği sığdır', run: () => VP.fx.pcArrange(VP.sel[0], 'fit') },
     pcFill: { label: 'Kabı doldur', run: () => VP.fx.pcArrange(VP.sel[0], 'fill') },
+    pcStretch: { label: 'Çerçeveyi dolduracak şekilde uzat', run: () => VP.fx.pcArrange(VP.sel[0], 'stretch') },
     fxSeparate: { label: 'Efekti ayır (normal gruba çevir)', run: () => VP.fx.separate(), enabled: () => VP.sel.some((i) => VP.fx.isFx(i)) },
     fxClear: { label: 'Efekti kaldır (aslına döndür)', run: () => VP.fx.clear(), enabled: () => VP.sel.some((i) => VP.fx.isFx(i)) },
     fit: { label: 'Sayfaya sığdır', kbd: 'F4', icon: 'fit', run: () => VP.fitPage() },
@@ -361,7 +410,7 @@
     const dn = $('#doc-name');
     if (document.activeElement !== dn) dn.value = VP.doc.name;
     $('#btn-dock').classList.toggle('on', !$('#dock').hidden);
-    $('#win-title').textContent = VP.doc.name + ' · VektörPad 31';
+    $('#win-title').textContent = VP.doc.name + ' · VektörPad';
     document.querySelectorAll('#stdbar [data-cmd]').forEach((b) => {
       const a = A[b.dataset.cmd];
       if (a && a.checked) {
@@ -385,7 +434,7 @@
   // Same grouping and order as the desktop suite's tool box: pick | shape | crop, zoom | curves, drawing,
   // rectangle, ellipse, shapes | text | dimensions, connectors | effects, transparency | eyedropper, fill |
   // smart fill | outline (a flyout of outline widths, not a tool).
-  const GROUPS = [['select', 'lassoTool', 'freeXform'], ['node', 'smoothTool', 'smearTool', 'twirlTool', 'attractTool', 'repelTool', 'roughenTool'], '|', ['cropTool', 'knifeTool', 'eraserTool', 'virtualDel'], ['zoom', 'hand', 'pageTool'], '|', ['freehand', 'line', 'pen', 'bsplineTool', 'polylineTool', 'curve3Tool'], ['brush', 'liveSketch', 'smartDraw', 'sketchTool', 'varOutline', 'impactTool'], ['rect', 'rect3Tool'], ['ellipse', 'ellipse3Tool'], ['polygon', 'star', 'cstarTool', 'spiral', 'graphTool', 'perfectTool'], '|', ['text', 'tableTool', 'textPathTool'], '|', ['dimParallel', 'dimHV', 'dimAngular', 'dimSegment', 'dimCallout', 'commentTool'], ['connStraight', 'connRight', 'connRound', 'anchorTool'], '|', ['shadowTool', 'innerShadowTool', 'blockShadowTool', 'blendTool', 'contourTool', 'distortTool', 'envelopeTool', 'extrudeTool', 'perspectiveTool', 'lensTool', 'powerclipTool'], ['transpTool'], '|', ['eyedropper', 'attrEyedropper'], ['fillTool', 'meshTool'], '|', ['smartFill'], '|', 'outline'];
+  const GROUPS = [['select', 'lassoTool'], ['node', 'smoothTool', 'smearTool', 'twirlTool', 'attractTool', 'repelTool', 'roughenTool'], '|', ['cropTool', 'knifeTool', 'eraserTool', 'virtualDel'], ['zoom', 'hand', 'pageTool'], '|', ['freehand', 'line', 'pen', 'bsplineTool', 'polylineTool', 'curve3Tool'], ['brush', 'liveSketch', 'smartDraw', 'sketchTool', 'varOutline'], ['rect', 'rect3Tool'], ['ellipse', 'ellipse3Tool'], ['polygon', 'star', 'cstarTool', 'spiral', 'graphTool', 'perfectTool'], '|', ['text', 'tableTool', 'textPathTool'], '|', ['dimParallel', 'dimHV', 'dimAngular', 'dimSegment', 'dimCallout', 'commentTool'], ['connStraight', 'connRight', 'connRound'], '|', ['shadowTool', 'innerShadowTool', 'blockShadowTool', 'blendTool', 'contourTool', 'distortTool', 'envelopeTool', 'extrudeTool', 'perspectiveTool', 'lensTool', 'powerclipTool'], ['transpTool'], '|', ['eyedropper', 'attrEyedropper'], ['fillTool', 'meshTool'], '|', ['smartFill'], '|', 'outline'];
   UI.groupCur = {};
   UI.renderToolbox = () => {
     $('#toolbox').innerHTML = GROUPS.map((g, gi) => {
@@ -658,7 +707,7 @@
   };
   const colorField = (label, name, hex) =>
     '<label class="field"><span>' + esc(label) + '</span><input type="color" data-pf="' + name + '" value="' + esc(hex || '#ffffff') + '" aria-label="' + esc(label) + '" style="width:34px;height:26px;border:0;padding:0;background:transparent"></label>';
-  const dirSeg = (cur) => '<span class="seg">' + [['outside', 'Dış'], ['inside', 'İç'], ['center', 'Merkeze']].map(([v, l]) => '<button data-act="fxDir:' + v + '" class="' + (cur === v ? 'on' : '') + '" title="' + l + ' kontur">' + l + '</button>').join('') + '</span>';
+  const dirSeg = (cur) => '<span class="seg">' + [['outside', 'Dış'], ['inside', 'İç']].map(([v, l]) => '<button data-act="fxDir:' + v + '" class="' + (cur === v ? 'on' : '') + '" title="' + l + ' kontur">' + l + '</button>').join('') + '</span>';
   const fxFields = (g) => {
     const fx = g.data.effect;
     const ext = VP.fx.ext(g);
@@ -802,11 +851,41 @@
     pb.innerHTML = h;
   };
   const selParams = () => VP.sel.filter((it) => it.data && it.data.param);
-  const selTexts = () => VP.sel.filter((it) => it instanceof paper.PointText).concat(UI.textItem && !VP.sel.includes(UI.textItem) ? [UI.textItem] : []);
+  const selTexts = () => {
+    const list = VP.sel.filter((it) => it instanceof paper.PointText || (VP.tx && VP.tx.is && VP.tx.is(it, 'paragraph')));
+    if (UI.textItem && !list.includes(UI.textItem)) list.push(UI.textItem);
+    return list;
+  };
   const applyTextProp = (fn) => {
     const ts = selTexts();
     if (ts.length) {
-      ts.forEach(fn);
+      ts.forEach((t) => {
+        if (t instanceof paper.PointText) {
+          fn(t);
+        } else if (VP.tx && VP.tx.is && VP.tx.is(t, 'paragraph')) {
+          const fx = t.data && t.data.effect;
+          if (fx) {
+            const fontObj = fx.font || (fx.font = {});
+            const proxy = {
+              get fontFamily() { return fontObj.family; },
+              set fontFamily(v) { fontObj.family = v; },
+              get fontSize() { return fontObj.size; },
+              set fontSize(v) { fontObj.size = v; },
+              get fontWeight() { return VP.textWeight(fontObj.bold, fontObj.italic); },
+              set fontWeight(w) {
+                fontObj.bold = /bold|[789]00/i.test(w);
+                fontObj.italic = /italic/i.test(w);
+              },
+              get justification() { return fx.align; },
+              set justification(j) { fx.align = j; },
+              get data() { return t.data; },
+              set data(d) { t.data = d; }
+            };
+            fn(proxy);
+            VP.tx.buildPara(t);
+          }
+        }
+      });
       if (UI.textItem) UI.syncTextEditor();
       else VP.commit();
     }
@@ -1011,6 +1090,35 @@
       VP.io.savePrefs();
       return UI.schedule('prop', 'status', 'dock', 'palette');
     }
+    if (id === 'underline') {
+      const ts = selTexts();
+      if (ts.length) {
+        const curOn = ts.some((t) => {
+          if (t instanceof paper.PointText) return !!(t.data && t.data.underline);
+          const fx = t.data && t.data.effect;
+          return !!(fx && (fx.underline || (fx.font && fx.font.underline)));
+        });
+        const nextOn = !curOn;
+        ts.forEach((t) => {
+          if (t instanceof paper.PointText) {
+            t.data = t.data || {};
+            t.data.underline = nextOn;
+          } else if (VP.tx && VP.tx.is && VP.tx.is(t, 'paragraph')) {
+            const fx = t.data && t.data.effect;
+            if (fx) {
+              fx.underline = nextOn;
+              if (fx.font) fx.font.underline = nextOn;
+              VP.tx.buildPara(t);
+            }
+          }
+        });
+        if (UI.textItem) UI.syncTextEditor();
+        else VP.commit();
+      } else {
+        d.underline = !d.underline;
+      }
+      return UI.schedule('prop');
+    }
     if (id.startsWith('just:')) {
       const j = id.slice(5);
       if (!applyTextProp((t) => (t.justification = j))) d.justification = j;
@@ -1174,7 +1282,7 @@
     }
     setTimeout(() => UI.onResize && UI.onResize(), 0);
   };
-  UI.DOCKERS = [['props', 'Özellikler'], ['objects', 'Nesneler'], ['pages', 'Sayfalar'], ['align', 'Hizala ve Dağıt'], ['transform', 'Dönüştür'], ['step', 'Adım ve Tekrar']];
+  UI.DOCKERS = [['props', 'Özellikler'], ['objects', 'Nesneler'], ['pages', 'Sayfalar'], ['align', 'Hizala ve Dağıt'], ['corners', 'Köşeler'], ['transform', 'Dönüştür'], ['step', 'Adım ve Tekrar']];
   UI.renderDockTabs = () => {
     const open = !$('#dock').hidden;
     $('#dock-tabs').innerHTML = UI.DOCKERS.map(([k, l]) => {
@@ -1196,6 +1304,7 @@
     else if (UI.dockTab === 'props') body.innerHTML = propsPanel();
     else if (UI.dockTab === 'objects') body.innerHTML = objectsPanel();
     else if (UI.dockTab === 'align') body.innerHTML = alignPanel();
+    else if (UI.dockTab === 'corners') body.innerHTML = cornersPanel();
     else if (UI.dockTab === 'transform') body.innerHTML = transformPanel();
     else if (UI.dockTab === 'step') body.innerHTML = stepPanel();
     else body.innerHTML = pagesPanel();
@@ -1283,8 +1392,12 @@
           h += '<div class="row">' + lensControls(fx) + '</div><p class="sec-note">Mercek, altındaki nesneleri canlı gösterir; onları taşıdığınızda güncellenir. Resimlerin rengi değişmez.</p>';
         }
         if (fx.type === 'powerclip') {
-          h += '<div class="grid-btns"><button class="btn" data-act="pcCenter">Ortala</button><button class="btn" data-act="pcFit">Sığdır</button><button class="btn" data-act="pcFill">Doldur</button></div>' +
-            '<div class="row"><button class="btn" data-act="fxEdit">' + ic('hand', 'sm') + 'İçeriği taşı</button></div><p class="sec-note">Kaldır: içerik kaptan çıkarılır.</p>';
+          h += '<div class="row"><button class="btn primary" data-act="pcEdit">' + ic('editText', 'sm') + 'PowerClip’i Düzenle</button>' +
+            '<button class="btn" data-act="pcSelectContent">' + ic('select', 'sm') + 'İçeriği Seç</button></div>' +
+            '<div class="grid-btns"><button class="btn" data-act="pcCenter">Ortala</button><button class="btn" data-act="pcFit">Sığdır</button><button class="btn" data-act="pcFill">Doldur</button><button class="btn" data-act="pcStretch">Uzat</button></div>' +
+            '<div class="row"><button class="btn" data-act="pcLockToggle">' + ic(fx.lock !== false ? 'lock' : 'unlock', 'sm') + (fx.lock !== false ? 'İçerik Kilitli' : 'İçerik Kilitsiz') + '</button>' +
+            '<button class="btn" data-act="pcExtract">' + ic('ungroup', 'sm') + 'İçeriği Çıkar</button></div>' +
+            '<p class="sec-note">Ctrl+Tık veya Çift Tık: Düzenle · Alt+Tık: İçeriği seç · İçeriği Çıkar: Kaptan nesneleri ayırır.</p>';
         }
         h += '<div class="row"><button class="btn" data-act="fxSeparate">Ayır</button><button class="btn danger" data-act="fxClear">Kaldır</button></div>';
       } else {
@@ -1331,20 +1444,93 @@
     return h;
   };
   const alignPanel = () => {
-    const a = VP.settings.alignTo;
-    let h = '<div class="sec"><div class="sec-h"><h3>Hizala</h3>' + segB([['selection', 'Seçime'], ['page', 'Sayfaya']], a, 'alignTo:') + '</div>' +
-      '<div class="grid-btns">' + [['l', 'alignL', 'Sol'], ['ch', 'alignCH', 'Orta'], ['r', 'alignR', 'Sağ'], ['t', 'alignT', 'Üst'], ['cv', 'alignCV', 'Merkez'], ['b', 'alignB', 'Alt']].map(([k, i, l]) => '<button class="btn" data-act="align:' + k + '" title="' + l + '">' + ic(i, 'sm') + l + '</button>').join('') + '</div>' +
-      '<p class="sec-note">Tek nesne her zaman sayfaya hizalanır</p></div>';
-    h += '<div class="sec"><div class="sec-h"><h3>Dağıt</h3></div><div class="grid-btns" style="grid-template-columns:repeat(2,1fr)">' +
-      [['h', 'distH', 'Yatay merkez'], ['v', 'distV', 'Dikey merkez'], ['hs', 'distH', 'Yatay aralık'], ['vs', 'distV', 'Dikey aralık']].map(([k, i, l]) => '<button class="btn" data-act="dist:' + k + '">' + ic(i, 'sm') + l + '</button>').join('') + '</div></div>';
+    const a = VP.settings.alignTo || 'selection';
+    let h = '<div class="sec"><div class="sec-h"><h3>Hizalama Hedefi</h3>' +
+      segB([['selection', 'Seçili Nesnelere'], ['page', 'Sayfa Merkezine'], ['pageEdge', 'Sayfa Kenarına']], a, 'alignTo:') + '</div>' +
+      '<div class="sec-h" style="margin-top:10px"><h3>Hizala</h3></div>' +
+      '<div class="grid-btns" style="grid-template-columns:repeat(3,1fr)">' +
+      [['l', 'alignL', 'Sol (L)'], ['ch', 'alignCH', 'Orta (C)'], ['r', 'alignR', 'Sağ (R)'],
+       ['t', 'alignT', 'Üst (T)'], ['cv', 'alignCV', 'Merkez (E)'], ['b', 'alignB', 'Alt (B)']].map(([k, i, l]) => '<button class="btn" data-act="align:' + k + '" title="' + l + '">' + ic(i, 'sm') + l + '</button>').join('') +
+      '</div>' +
+      '<div class="row" style="margin-top:6px"><button class="btn cd-wide" data-act="align:pageCenter" style="width:100%">' + ic('alignPageCenter', 'sm') + 'Sayfaya Ortala (P)</button></div>' +
+      '<p class="sec-note">Tek bir nesne seçiliyken her zaman sayfaya göre hizalanır.</p></div>';
+
+    h += '<div class="sec"><div class="sec-h"><h3>Dağıt</h3></div>' +
+      '<p class="sec-note" style="margin-bottom:6px">Yatay Dağıtım:</p>' +
+      '<div class="grid-btns" style="grid-template-columns:repeat(4,1fr)">' +
+      [['hl', 'distH', 'Sol'], ['h', 'distH', 'Merkez'], ['hr', 'distH', 'Sağ'], ['hs', 'distH', 'Aralık']].map(([k, i, l]) => '<button class="btn" data-act="dist:' + k + '" title="Yatay ' + l + '">' + ic(i, 'sm') + l + '</button>').join('') +
+      '</div>' +
+      '<p class="sec-note" style="margin:8px 0 6px">Dikey Dağıtım:</p>' +
+      '<div class="grid-btns" style="grid-template-columns:repeat(4,1fr)">' +
+      [['vt', 'distV', 'Üst'], ['v', 'distV', 'Merkez'], ['vb', 'distV', 'Alt'], ['vs', 'distV', 'Aralık']].map(([k, i, l]) => '<button class="btn" data-act="dist:' + k + '" title="Dikey ' + l + '">' + ic(i, 'sm') + l + '</button>').join('') +
+      '</div></div>';
     return h;
   };
-  const transformPanel = () =>
-    '<div class="sec"><div class="sec-h"><h3>Döndür</h3></div><div class="row">' + dfield('Açı', 'tRot', '15', '°') + '<button class="btn" data-act="tRotApply">Uygula</button></div></div>' +
-    '<div class="sec"><div class="sec-h"><h3>Ölçek ve yansıt</h3></div><div class="row">' + dfield('Ölçek', 'tScale', '100', '%') + '<button class="btn" data-act="tScaleApply">Uygula</button></div>' +
-    '<div class="row"><button class="btn" data-act="flipH">' + ic('flipH', 'sm') + 'Yatay yansıt</button><button class="btn" data-act="flipV">' + ic('flipV', 'sm') + 'Dikey yansıt</button></div></div>' +
-    '<div class="sec"><div class="sec-h"><h3>Eğ</h3></div><div class="row">' + dfield('Eğ X', 'tSkx', '0', '°') + dfield('Eğ Y', 'tSky', '0', '°') + '<button class="btn" data-act="tSkewApply">Uygula</button></div></div>' +
-    '<p class="sec-note">Konum ve boyut için özellik çubuğundaki X, Y, En, Boy alanlarını kullanın.</p>';
+
+  const cornersPanel = () => {
+    const cType = VP.defaults.cornerType || 'fillet';
+    const cMM = VP.defaults.cornerMM || 4;
+    return '<div class="sec"><div class="sec-h"><h3>Köşe Türü</h3>' +
+      segB([['fillet', 'Yuvarlatılmış'], ['scallop', 'Fisto (Oyuk)'], ['chamfer', 'Pahlı (Eğimli)']], cType, 'cornerType:') + '</div>' +
+      '<div class="row" style="margin-top:10px">' + dfield('Yarıçap / Mesafe', 'cornerR', VP.num(cMM, 2), 'mm') + '</div>' +
+      '<div class="row" style="margin-top:10px"><button class="btn primary cd-wide" data-act="cornerApply" style="width:100%">' + ic('cornerRound', 'sm') + 'Köşeleri Uygula</button></div>' +
+      '<p class="sec-note" style="margin-top:8px">Seçili eğrilerin ve şekillerin düz kenarlarının birleştiği tüm köşelere CorelDRAW hassasiyetinde uygulanır.</p></div>';
+  };
+  const transformPanel = () => {
+    const curTab = VP.settings.tfTab || 'pos';
+    const b = VP.selBounds ? VP.selBounds() : null;
+    const curX = b ? VP.toMM(b.x) : 0;
+    const curY = b ? VP.toMM(b.y) : 0;
+    const curW = b ? VP.toMM(b.width) : 0;
+    const curH = b ? VP.toMM(b.height) : 0;
+    const curAngle = VP.sel.length === 1 ? VP.itemAngle(VP.sel[0]) : 0;
+    const curAnchor = VP.settings.tfAnchor || 'center';
+
+    const anchorGrid = (prefix) => {
+      const pts = [['tl', '↖'], ['tc', '↑'], ['tr', '↗'],
+                   ['ml', '←'], ['center', '•'], ['mr', '→'],
+                   ['bl', '↙'], ['bc', '↓'], ['br', '↘']];
+      return '<div class="cd-anchor-grid" style="display:grid;grid-template-columns:repeat(3,28px);gap:3px;margin:6px 0">' +
+        pts.map(([v, label]) => '<button type="button" class="btn' + (curAnchor === v ? ' on' : '') + '" data-act="' + prefix + v + '" style="width:28px;height:24px;padding:0;font-size:11px" title="' + v + '">' + label + '</button>').join('') +
+        '</div>';
+    };
+
+    let h = '<div class="sec"><div class="sec-h"><h3>Dönüşüm Türü</h3>' +
+      segB([['pos', 'Konum'], ['rot', 'Döndür'], ['scale', 'Ölçek'], ['size', 'Boyut'], ['skew', 'Eğ']], curTab, 'tfTab:') +
+      '</div></div>';
+
+    if (curTab === 'pos') {
+      h += '<div class="sec"><div class="sec-h"><h3>Konum (Position)</h3></div>' +
+        '<div class="row">' + dfield('X', 'tfX', VP.num(curX, 1), 'mm') + dfield('Y', 'tfY', VP.num(curY, 1), 'mm') + '</div>' +
+        '<div class="row"><label class="field"><span>Göreli Konum</span><input type="checkbox" data-dk="tfRel" ' + (VP.settings.tfRel ? 'checked' : '') + '></label></div>' +
+        '<p class="sec-note">Referans Noktası (Çapa):</p>' + anchorGrid('tfAnchor:') +
+        '<div class="row" style="margin-top:10px">' + dfield('Kopya Sayısı', 'tfCopies', '1', '') + '<button class="btn primary cd-wide" data-act="tfPosApply">Uygula</button></div></div>';
+    } else if (curTab === 'rot') {
+      h += '<div class="sec"><div class="sec-h"><h3>Döndür (Rotate)</h3></div>' +
+        '<div class="row">' + dfield('Açı', 'tRot', '15', '°') + '</div>' +
+        '<p class="sec-note">Dönüş Merkezi (Çapa):</p>' + anchorGrid('tfAnchor:') +
+        '<div class="row" style="margin-top:10px">' + dfield('Kopya Sayısı', 'tfCopies', '0', '') + '<button class="btn primary cd-wide" data-act="tRotApply">Uygula</button></div></div>';
+    } else if (curTab === 'scale') {
+      h += '<div class="sec"><div class="sec-h"><h3>Ölçek ve Yansıt (Scale & Mirror)</h3></div>' +
+        '<div class="row">' + dfield('Ölçek X', 'tfScaleX', '100', '%') + dfield('Ölçek Y', 'tfScaleY', '100', '%') + '</div>' +
+        '<div class="row"><button class="btn" data-act="flipH">' + ic('flipH', 'sm') + 'Yatay Yansıt</button><button class="btn" data-act="flipV">' + ic('flipV', 'sm') + 'Dikey Yansıt</button></div>' +
+        '<p class="sec-note">Referans Noktası (Çapa):</p>' + anchorGrid('tfAnchor:') +
+        '<div class="row" style="margin-top:10px">' + dfield('Kopya Sayısı', 'tfCopies', '0', '') + '<button class="btn primary cd-wide" data-act="tScaleApply">Uygula</button></div></div>';
+    } else if (curTab === 'size') {
+      h += '<div class="sec"><div class="sec-h"><h3>Boyut (Size)</h3></div>' +
+        '<div class="row">' + dfield('Genişlik', 'tfW', VP.num(curW, 1), 'mm') + dfield('Yükseklik', 'tfH', VP.num(curH, 1), 'mm') + '</div>' +
+        '<div class="row"><label class="field"><span>Oranları Koru</span><input type="checkbox" data-dk="tfLock" ' + (VP.settings.tfLock !== false ? 'checked' : '') + '></label></div>' +
+        '<p class="sec-note">Referans Noktası (Çapa):</p>' + anchorGrid('tfAnchor:') +
+        '<div class="row" style="margin-top:10px">' + dfield('Kopya Sayısı', 'tfCopies', '0', '') + '<button class="btn primary cd-wide" data-act="tfSizeApply">Uygula</button></div></div>';
+    } else if (curTab === 'skew') {
+      h += '<div class="sec"><div class="sec-h"><h3>Eğ (Skew)</h3></div>' +
+        '<div class="row">' + dfield('Eğ X', 'tSkx', '0', '°') + dfield('Eğ Y', 'tSky', '0', '°') + '</div>' +
+        '<p class="sec-note">Referans Noktası (Çapa):</p>' + anchorGrid('tfAnchor:') +
+        '<div class="row" style="margin-top:10px">' + dfield('Kopya Sayısı', 'tfCopies', '0', '') + '<button class="btn primary cd-wide" data-act="tSkewApply">Uygula</button></div></div>';
+    }
+
+    return h;
+  };
   const stepPanel = () =>
     '<div class="sec"><div class="sec-h"><h3>Adım ve tekrar</h3></div>' +
     '<div class="row">' + dfield('Kopya', 'srN', '3', '') + '</div>' +
@@ -1561,9 +1747,67 @@
         VP.align(arg);
         break;
       case 'dist':
-        if (arg === 'h' || arg === 'v') VP.distribute(arg, 'center');
+        if (arg === 'hl') VP.distribute('h', 'left');
+        else if (arg === 'hr') VP.distribute('h', 'right');
+        else if (arg === 'h') VP.distribute('h', 'center');
+        else if (arg === 'hs') VP.distribute('h', 'space');
+        else if (arg === 'vt') VP.distribute('v', 'top');
+        else if (arg === 'vb') VP.distribute('v', 'bottom');
+        else if (arg === 'v') VP.distribute('v', 'center');
+        else if (arg === 'vs') VP.distribute('v', 'space');
         else VP.distribute(arg[0], 'space');
         break;
+      case 'cornerType':
+        VP.defaults.cornerType = arg;
+        VP.io.savePrefs();
+        break;
+      case 'cornerApply': {
+        const type = VP.defaults.cornerType || 'fillet';
+        const mm = VP.parseNum($('[data-dk="cornerR"]').value) || VP.defaults.cornerMM || 4;
+        VP.defaults.cornerMM = mm;
+        if (VP.objops && VP.objops.corners) VP.objops.corners(type, mm);
+        break;
+      }
+      case 'tfTab':
+        VP.settings.tfTab = arg;
+        VP.io.savePrefs();
+        break;
+      case 'tfAnchor':
+        VP.settings.tfAnchor = arg;
+        VP.io.savePrefs();
+        break;
+      case 'tfPosApply': {
+        if (!VP.sel.length) return UI.toast('Önce bir nesne seçin');
+        const xMM = VP.parseNum($('[data-dk="tfX"]').value);
+        const yMM = VP.parseNum($('[data-dk="tfY"]').value);
+        const copies = Math.max(0, Math.round(VP.parseNum($('[data-dk="tfCopies"]').value) || 0));
+        const rel = $('[data-dk="tfRel"]') && $('[data-dk="tfRel"]').checked;
+        const b = VP.selBounds();
+        let dx = rel ? VP.toPT(xMM || 0) : VP.toPT(xMM) - b.x;
+        let dy = rel ? VP.toPT(yMM || 0) : VP.toPT(yMM) - b.y;
+        if (copies > 0) {
+          const list = VP.sel.map((it) => it.clone());
+          VP.T.move(list, new paper.Point(dx, dy));
+          VP.setSelection(list);
+        } else {
+          VP.T.move(VP.sel, new paper.Point(dx, dy));
+        }
+        VP.commit();
+        break;
+      }
+      case 'tfSizeApply': {
+        if (!VP.sel.length) return UI.toast('Önce bir nesne seçin');
+        const wMM = VP.parseNum($('[data-dk="tfW"]').value);
+        const hMM = VP.parseNum($('[data-dk="tfH"]').value);
+        const b = VP.selBounds();
+        if (wMM > 0 && hMM > 0 && b.width > 0 && b.height > 0) {
+          const sx = VP.toPT(wMM) / b.width;
+          const sy = VP.toPT(hMM) / b.height;
+          VP.T.scale(VP.sel, sx, sy, b.center);
+          VP.commit();
+        }
+        break;
+      }
       case 'tRotApply':
         VP.rotateSel(VP.parseNum($('[data-dk="tRot"]').value) || 0);
         break;
@@ -2069,9 +2313,21 @@
     });
     // standard toolbar and document tab buttons run actions by id
     document.querySelectorAll('[data-cmd]').forEach((b) => b.addEventListener('click', () => UI.run(b.dataset.cmd)));
-    $('#btn-snap').addEventListener('click', (e) => UI.popover(e.currentTarget, menuHTML(['snap', 'snapGuides', 'snapObjects', 'alignGuides']), (id) => UI.run(id)));
+    $('#btn-snap').addEventListener('click', (e) => UI.popover(e.currentTarget, menuHTML(['snap', 'snapGuides', 'snapObjects']), (id) => UI.run(id)));
     $('#st-chips').addEventListener('click', (e) => {
-      if (e.target.closest('[data-st]')) UI.openDock('props');
+      const stEl = e.target.closest('[data-st]');
+      if (stEl) {
+        const which = stEl.dataset.st;
+        if (which === 'fill') {
+          if (VP.actions.fillProps) VP.ui.run('fillProps');
+          else UI.openDock('props');
+        } else if (which === 'stroke') {
+          if (VP.actions.outlinePen) VP.ui.run('outlinePen');
+          else UI.openDock('props');
+        } else {
+          UI.openDock('props');
+        }
+      }
     });
     bindPalette($('#docpal'));
     $('#file-open').addEventListener('change', (e) => {

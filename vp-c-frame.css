@@ -1,0 +1,67 @@
+/* VektörPad, CorelDRAW 2026 look: frame part (title bar, menu bar, standard toolbar, document tabs).
+   Colours come from the --cd-* variables in index.html (dark theme measured from the reference). */
+
+/* standard toolbar: icons at the suite's small size, drop-down halves next to Aç / Geri al / Yinele */
+html[data-skin="classic"] #stdbar svg.i { width: 18px; height: 18px; }
+html[data-skin="classic"] #stdbar .icon-btn:disabled { opacity: 0.32; }
+html[data-skin="classic"] #stdbar .sb-main { width: 26px; }
+html[data-skin="classic"] .sb-drop {
+  display: inline-grid;
+  place-items: center;
+  width: 13px;
+  height: 28px;
+  margin-left: -1px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--fg);
+  flex: none;
+}
+html[data-skin="classic"] .sb-drop:hover { background: var(--cd-hover); }
+html[data-skin="classic"] .sb-drop:disabled { opacity: 0.32; cursor: default; background: transparent; }
+html[data-skin="classic"] .sb-drop[hidden] { display: none; }
+html[data-skin="classic"] #btn-snap svg, html[data-skin="classic"] .sb-drop svg { flex: none; }
+html[data-skin="classic"] #btn-snap { min-width: 58px; height: 24px; justify-content: space-between; border: 0; border-radius: 0; background: var(--cd-tab); color: var(--fg); padding: 0 6px 0 8px; gap: 6px; font-size: 12px; }
+html[data-skin="classic"] #btn-snap:hover { filter: brightness(1.15); }
+html[data-skin="classic"] #zoom-label { margin: 0 2px; }
+html[data-skin="classic"] #btn-dock { margin-left: 2px; }
+html[data-skin="classic"] #stdbar .sb-sep { height: auto; }
+
+/* title bar: no drag/select, the text like the window caption */
+html[data-skin="classic"] #titlebar { -webkit-user-select: none; user-select: none; border: 0; }
+html[data-skin="classic"] #titlebar .spacer { flex: 1; }
+html[data-skin="classic"] #titlebar .tb-btn[hidden] { display: none; }
+
+/* focus rings: thin and square */
+html[data-skin="classic"] #stdbar :focus-visible, html[data-skin="classic"] #menubar :focus-visible, html[data-skin="classic"] .doc-tabs :focus-visible { outline: 1px solid var(--accent); outline-offset: -1px; }
+
+/* light theme: the active tab text stays readable on the blue */
+html[data-skin="classic"] .doc-tab.on .doc-close, html[data-skin="classic"] .doc-tab.on .doc-name { color: var(--cd-tab-on-fg); }
+
+/* narrow windows: the menu button takes the place of the menus */
+@media (max-width: 780px) {
+  html[data-skin="classic"] #menubar { height: 28px; }
+}
+
+/* touch screens (iPad): the same look, finger-sized targets */
+@media (pointer: coarse) {
+  html[data-skin="classic"] #titlebar { height: 24px; }
+  html[data-skin="classic"] #titlebar .tb-btn { width: 44px; }
+  html[data-skin="classic"] #menubar { height: 34px; }
+  html[data-skin="classic"] .menu-btn { height: 34px; padding: 0 9px; font-size: 13px; }
+  html[data-skin="classic"] #btn-menu-all { width: 44px; height: 34px; }
+  html[data-skin="classic"] #stdbar { min-height: 42px; }
+  html[data-skin="classic"] #stdbar .icon-btn { width: 38px; height: 38px; }
+  html[data-skin="classic"] #stdbar .sb-main { width: 34px; }
+  html[data-skin="classic"] #stdbar svg.i { width: 20px; height: 20px; }
+  html[data-skin="classic"] .sb-drop { width: 22px; height: 38px; }
+  html[data-skin="classic"] #zoom-label { height: 34px; min-width: 92px; font-size: 13px; }
+  html[data-skin="classic"] #zoom-label::after { top: 13px; }
+  html[data-skin="classic"] #btn-snap { height: 34px; font-size: 13px; }
+  html[data-skin="classic"] .doc-tabs { height: 38px; gap: 4px; }
+  html[data-skin="classic"] .doc-tab { height: 32px; font-size: 13px; }
+  html[data-skin="classic"] .doc-name { font-size: 13px; }
+  html[data-skin="classic"] .doc-close { width: 30px; height: 30px; }
+  html[data-skin="classic"] .doc-add { width: 36px; height: 32px; }
+}

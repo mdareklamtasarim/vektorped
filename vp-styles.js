@@ -186,6 +186,38 @@
     return VP.hex(c);
   };
   ST.BUILTIN = {
+    pantone: {
+      name: 'PANTONE+ Solid Coated',
+      colors: () => [
+        ['#FED100', 'PANTONE Yellow C · C0 M1 Y100 K0'],
+        ['#FFD100', 'PANTONE 109 C · C0 M10 Y100 K0'],
+        ['#FF8200', 'PANTONE 151 C · C0 M60 Y100 K0'],
+        ['#FF6900', 'PANTONE 165 C · C0 M70 Y100 K0'],
+        ['#DA291C', 'PANTONE Warm Red C · C0 M86 Y89 K0'],
+        ['#E03C31', 'PANTONE Red 032 C · C0 M90 Y86 K0'],
+        ['#C8102E', 'PANTONE 186 C · C0 M100 Y81 K4'],
+        ['#BA0C2F', 'PANTONE Rubine Red C · C0 M100 Y55 K10'],
+        ['#862633', 'PANTONE 195 C · C19 M90 Y50 K59'],
+        ['#CE0058', 'PANTONE Rhodamine Red C · C3 M100 Y21 K0'],
+        ['#6C1D45', 'PANTONE 222 C · C29 M100 Y34 K63'],
+        ['#9B26B6', 'PANTONE Purple C · C53 M90 Y0 K0'],
+        ['#5F259F', 'PANTONE Violet C · C84 M99 Y0 K0'],
+        ['#00205B', 'PANTONE Blue 072 C · C100 M95 Y0 K3'],
+        ['#002F6C', 'PANTONE Reflex Blue C · C100 M89 Y0 K0'],
+        ['#0033A0', 'PANTONE Process Blue C · C100 M13 Y1 K2'],
+        ['#0085CA', 'PANTONE 300 C · C100 M56 Y2 K0'],
+        ['#00629B', 'PANTONE 301 C · C100 M68 Y15 K3'],
+        ['#002D62', 'PANTONE 281 C · C100 M90 Y32 K24'],
+        ['#00AB84', 'PANTONE Green C · C100 M0 Y59 K0'],
+        ['#00693E', 'PANTONE 348 C · C100 M0 Y85 K24'],
+        ['#43B02A', 'PANTONE 361 C · C77 M0 Y100 K0'],
+        ['#78BE20', 'PANTONE 368 C · C63 M0 Y100 K0'],
+        ['#8A532C', 'PANTONE 469 C · C24 M79 Y100 K73'],
+        ['#505759', 'PANTONE Cool Gray 9 C · C30 M22 Y17 K57'],
+        ['#D9D9D6', 'PANTONE Cool Gray 1 C · C4 M2 Y4 K8'],
+        ['#000000', 'PANTONE Black C · C0 M0 Y0 K100']
+      ]
+    },
     default: { name: 'Varsayılan (CMYK benzeri)', colors: () => UI.PALETTE },
     pastel: { name: 'Pastel', colors: () => ramp(16, (i) => [hsl((i * 360) / 16, 0.65, 0.82), 'Pastel ' + (i + 1)]) },
     vivid: { name: 'Canlı (RGB)', colors: () => ramp(18, (i) => [hsl((i * 360) / 18, 0.9, 0.5), 'Canlı ' + (i + 1)]) },

@@ -56,7 +56,48 @@
     down(e) {
       const h = VP.hitHandle(e.point);
       if (h) return this.startHandle(h, e);
-      const hit = VP.hitItem(e.point);
+      let hit = VP.hitItem(e.point);
+
+      // Alt+Click: Direct select PowerClip contents (CorelDRAW behavior)
+      if (e.alt) {
+        const deep = VP.hitItem(e.point, { deep: true });
+        if (deep) {
+          let cur = deep;
+          let pcChild = null;
+          while (cur && cur.parent && cur.parent !== paper.project) {
+            if (cur.data && cur.data.pcClip) {
+              pcChild = deep;
+              break;
+            }
+            if (cur.data && cur.data.effect && cur.data.effect.type === 'powerclip') {
+              const kids = VP.fx.pcContents(cur);
+              pcChild = kids.includes(deep) ? deep : kids[0] || cur;
+              break;
+            }
+            cur = cur.parent;
+          }
+          if (pcChild) {
+            VP.setSelection([pcChild]);
+            this.op = { type: 'move', start: e.point, moved: false, wasSel: true, hit: pcChild, origin: VP.selBounds().topLeft };
+            VP.toast('PowerClip içeriği seçildi (Alt+Tık)');
+            return;
+          }
+        }
+      }
+
+      // Ctrl+Click: Enter or Exit PowerClip Edit Mode (CorelDRAW behavior)
+      if ((e.ctrl || e.meta) && !e.shift) {
+        if (VP.cFocus && VP.cFocus.isEditingPC) {
+          if (!hit || (VP.cFocus.activePC && !VP.cFocus.activePC.contains(hit))) {
+            VP.cFocus.exit();
+            return;
+          }
+        } else if (hit && VP.fx && VP.fx.of && VP.fx.of(hit) && VP.fx.of(hit).type === 'powerclip') {
+          VP.fx.pcEdit(hit);
+          return;
+        }
+      }
+
       const additive = e.shift || VP.settings.multi;
       if (hit) {
         if (additive) {
@@ -108,7 +149,14 @@
         }
         target = VP.snapPt(target);
         const d = target.subtract(VP.selBounds().topLeft);
-        if (d.x || d.y) VP.T.move(VP.sel, d);
+        if (d.x || d.y) {
+          VP.T.move(VP.sel, d);
+          VP.sel.forEach((it) => {
+            if (VP.fx && VP.fx.of && VP.fx.of(it) && VP.fx.of(it).type === 'powerclip' && it.data.effect && it.data.effect.lock === false) {
+              VP.T.move(VP.fx.pcContents(it), d.multiply(-1));
+            }
+          });
+        }
         op.changed = true;
         VP.drawOverlay();
         VP.emit('transform');
@@ -508,6 +556,39 @@
       });
       VP.commit();
     },
+    
+    nodeAdd() {
+      if (this.target) {
+        const segs = Array.from(this.segs);
+        if (segs.length >= 2) {
+          // add node midway between selected segments
+          const s1 = segs[0], s2 = segs[1];
+          if (s1.curve) this.addAt(s1.curve.getLocationAt(s1.curve.length / 2));
+        } else if (this.target.firstCurve) {
+          this.addAt(this.target.firstCurve.getLocationAt(this.target.firstCurve.length / 2));
+        }
+      }
+    },
+    nodeDelete() { this.deleteNodes(); },
+    nodeJoin() {
+      const segs = Array.from(this.segs);
+      if (segs.length === 2 && segs[0].path !== segs[1].path) {
+        segs[0].path.join(segs[1].path);
+        VP.commit();
+        VP.drawOverlay();
+      }
+    },
+    nodeBreak() {
+      const segs = Array.from(this.segs);
+      segs.forEach(s => {
+        if (s.path && s.path.closed) {
+          s.path.splitAt(s.location);
+        }
+      });
+      VP.commit();
+      VP.drawOverlay();
+    },
+
     toggleClosed() {
       const paths = this.segs.size ? Array.from(new Set(Array.from(this.segs).map((s) => s.path))) : this.paths();
       paths.forEach((p) => (p.closed = !p.closed));

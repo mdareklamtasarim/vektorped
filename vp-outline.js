@@ -33,7 +33,7 @@
   // shapes for one end: [{pts, fill} | {pts, stroke, closed}]
   const headAt = (type, P, dir, sw, size) => {
     const L = Math.max(sw * size, sw * 3, 1.5);
-    const W = L * (OL._wr || 0.8);
+    const W = L * 0.8;
     const n = Pt(-dir.y, dir.x);
     const Tp = P.add(dir.multiply(sw * 1.6));
     const B = Tp.subtract(dir.multiply(L));
@@ -64,7 +64,6 @@
     const L = p.length;
     if (!(L > 0)) return [];
     let out = [];
-    OL._wr = a.wr || 0.8;
     if (a.s && a.s !== 'none') {
       const t = p.getTangentAt(Math.min(L, 0.01));
       if (t) out = out.concat(headAt(a.s, p.firstSegment.point, t.multiply(-1).normalize(), sw, size));
@@ -73,7 +72,6 @@
       const t = p.getTangentAt(Math.max(0, L - 0.01));
       if (t) out = out.concat(headAt(a.e, p.lastSegment.point, t.normalize(), sw, size));
     }
-    OL._wr = null;
     return out;
   };
   // calligraphic outline: loops of points (an elliptical nib swept along the path)
@@ -729,7 +727,7 @@
       const a = d.arrows || {};
       const nib = d.nib || { stretch: 100, angle: 0 };
       h += '<div class="sec"><div class="sec-h"><h3>Anahat kalemi</h3></div>';
-      if (p instanceof paper.Path && !p.closed) h += '<div class="row">' + arrowSel('Başlangıç oku', 'olStart', a.s || 'none') + '</div><div class="row">' + arrowSel('Bitiş oku', 'olEnd', a.e || 'none') + '</div><div class="row">' + H.dfieldPf('Ok boyutu', 'olSize', VP.num(a.size || 4, 1), '×') + H.dfieldPf('Genişlik', 'olWid', Math.round((a.wr || 0.8) * 100), '%') + '<button class="btn" data-act="olSwap">Okları değiştir</button></div>';
+      if (p instanceof paper.Path && !p.closed) h += '<div class="row">' + arrowSel('Başlangıç oku', 'olStart', a.s || 'none') + '</div><div class="row">' + arrowSel('Bitiş oku', 'olEnd', a.e || 'none') + '</div><div class="row">' + H.dfieldPf('Ok boyutu', 'olSize', VP.num(a.size || 4, 1), '×') + '<button class="btn" data-act="olSwap">Okları değiştir</button></div>';
       h += '<div class="row"><span class="pb-label">Konum</span><span class="seg">' + [['outside', 'Dış'], ['center', 'Orta'], ['inside', 'İç']].map(([k, l]) => '<button data-act="olPos:' + k + '" class="' + ((d.strokePos || 'center') === k ? 'on' : '') + '">' + l + '</button>').join('') + '</span></div>';
       h += '<div class="row"><button class="btn' + (d.behindFill ? ' on' : '') + '" data-act="olBehind" aria-pressed="' + !!d.behindFill + '">Dolgunun arkasında</button></div>';
       h += '<div class="row">' + H.dfieldPf('Kaligrafi genişliği', 'olStretch', Math.round(nib.stretch), '%') + H.dfieldPf('Uç açısı', 'olAngle', VP.num(nib.angle || 0, 0), '°') + '</div>';
@@ -768,10 +766,6 @@
     const it = one();
     if (name === 'olStart' || name === 'olEnd') {
       setArrows((a) => (a[name === 'olStart' ? 's' : 'e'] = raw));
-      return true;
-    }
-    if (name === 'olWid' && v > 0) {
-      setArrows((a) => (a.wr = clamp(v, 10, 400) / 100));
       return true;
     }
     if (name === 'olSize' && v > 0) {
